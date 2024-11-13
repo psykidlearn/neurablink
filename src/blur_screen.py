@@ -57,22 +57,10 @@ class BlurWindow(QtWidgets.QWidget):
         else:
             self.timer.stop()
 
-def reset_all_windows(blur_windows):
+def reset_all_windows(blur_windows):  
     for window in blur_windows:
         # Use invokeMethod to ensure the method is called in the correct thread
         QtCore.QMetaObject.invokeMethod(window, "reset_opacity", QtCore.Qt.QueuedConnection)
-
-class KeyPressFilter(QtCore.QObject):
-    def __init__(self, blur_windows):
-        super().__init__()
-        self.blur_windows = blur_windows
-
-    def eventFilter(self, obj, event):
-        if event.type() == QtCore.QEvent.KeyPress and event.key() == QtCore.Qt.Key_Space:
-            for window in self.blur_windows:
-                window.reset_opacity()
-            return True
-        return super().eventFilter(obj, event)
 
 def main():
     app = QtWidgets.QApplication([])
@@ -82,11 +70,9 @@ def main():
         blur_window.setGeometry(screen.geometry())  # Set the geometry to the screen's geometry
         blur_window.showFullScreen()  # Show the window in full screen mode
         blur_windows.append(blur_window)
-    # key_press_filter = KeyPressFilter(blur_windows)
-    # app.installEventFilter(key_press_filter)
-    # Set up a global hotkey for the space bar
+ 
     keyboard.add_hotkey('space', reset_all_windows, args=(blur_windows,))
     app.exec_()
 
 if __name__ == "__main__":
-    main()
+    main() 
