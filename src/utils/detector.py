@@ -7,11 +7,12 @@ class EyeLandmarksDetector:
     LEFT_EYE_LANDMARKS = [33, 160, 158, 133, 153, 144]
     RIGHT_EYE_LANDMARKS = [362, 385, 387, 263, 373, 380]
     
-    def __init__(self):
+    def __init__(self, mask_size=16):
         self.mp_face_mesh = mp.solutions.face_mesh
         self.face_mesh = self.mp_face_mesh.FaceMesh(
             static_image_mode=False, max_num_faces=1, refine_landmarks=True
             )
+        self.mask_size = mask_size
 
     def get_eye_landmarks(self, frame):
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -39,7 +40,30 @@ class EyeLandmarksDetector:
             cv2.fillPoly(mask, [np.array(landmarks['right_eye'], dtype=np.int32)], 1)
         
         return mask.astype(bool)
+    
+    def create_eye_center_mask(self, frame):
+        landmarks = self.get_eye_landmarks(frame)
+        mask = np.zeros(frame.shape[:2], dtype=bool)
+        center_right = np.array(landmarks['right_eye'], dtype=np.int32).mean(0)
+        center_left = np.array(landmarks['left_eye'], dtype=np.int32).mean(0)
 
+        slice_right_y = slice(
+            int(center_right[0]) - self.mask_size // 2, 
+            int(center_right[0]) + self.mask_size // 2)
+        slice_right_x = slice(
+            int(center_right[1]) - self.mask_size // 2, 
+            int(center_right[1]) + self.mask_size // 2)
+        slice_left_y = slice(
+            int(center_left[0]) - self.mask_size // 2, 
+            int(center_left[0]) + self.mask_size // 2)
+        slice_left_x = slice(
+            int(center_left[1]) - self.mask_size // 2, 
+            int(center_left[1]) + self.mask_size // 2)
+        
+        mask[slice_left_x, slice_left_y] = True
+        mask[slice_right_x, slice_right_y] = True
+        return mask
+        
 
 class FramewiseBlinkDetector:
 
@@ -73,6 +97,18 @@ class FramewiseIntensityBlinkDetector(FramewiseBlinkDetector):
         
         mean_intensity = np.stack(mean_intensity)
         return np.abs(np.diff(mean_intensity, axis=0))
+
+
+class FramewisePixelBlinkDetector(FramewiseBlinkDetector):
+
+    def compute_framewise_changes(self, frames):
+        pixels = []
+        for frame in frames:
+            mask = self.eye_detector.create_eye_center_mask(frame)
+            pixels.append(frame[mask])
+        
+        pixels = np.stack(pixels)
+        return np.abs(np.diff(pixels, axis=0)).mean()
 
 
 if __name__ == "__main__":
