@@ -31,12 +31,13 @@ class EyeLandmarksDetector:
                 for i in self.RIGHT_EYE_LANDMARKS]
         return eye_landmarks
 
-    def create_eye_mask(self, frame):
+    def create_eye_mask(self, frame, side='left+right'):
         landmarks = self.get_eye_landmarks(frame)
         mask = np.zeros(frame.shape[:2], dtype=np.uint8)
         
-        if landmarks['left_eye'] and landmarks['right_eye']:
+        if landmarks['left_eye'] and 'left' in side:
             cv2.fillPoly(mask, [np.array(landmarks['left_eye'], dtype=np.int32)], 1)
+        if landmarks['right_eye'] and 'right' in side:
             cv2.fillPoly(mask, [np.array(landmarks['right_eye'], dtype=np.int32)], 1)
         
         return mask.astype(bool)
@@ -63,7 +64,7 @@ class EyeLandmarksDetector:
         mask[slice_left_x, slice_left_y] = True
         mask[slice_right_x, slice_right_y] = True
         return mask
-        
+
 
 class FramewiseBlinkDetector:
 
@@ -87,7 +88,7 @@ class FramewiseBlinkDetector:
         raise NotImplementedError
     
 
-class FramewiseIntensityBlinkDetector(FramewiseBlinkDetector):
+class IntensityBlinkDetector(FramewiseBlinkDetector):
 
     def compute_framewise_changes(self, frames):
         mean_intensity = []
@@ -97,9 +98,28 @@ class FramewiseIntensityBlinkDetector(FramewiseBlinkDetector):
         
         mean_intensity = np.stack(mean_intensity)
         return np.abs(np.diff(mean_intensity, axis=0))
+    
+
+class SymmetryBlinkDetector(FramewiseBlinkDetector):
+
+    def compute_framewise_changes(self, frames):
+        mean_intensity_left = []
+        mean_intensity_right = []
+        for frame in frames:
+            mask = self.eye_detector.create_eye_mask(frame, side='left')
+            mean_intensity_left.append(frame[mask].mean())
+            mask = self.eye_detector.create_eye_mask(frame, side='right')
+            mean_intensity_right.append(frame[mask].mean())
+
+        mean_intensity_left = np.stack(mean_intensity_left)
+        changes_left = np.abs(np.diff(mean_intensity_left, axis=0))
+
+        mean_intensity_right = np.stack(mean_intensity_right)
+        changes_right = np.abs(np.diff(mean_intensity_right, axis=0))
+        return changes_left * changes_right
 
 
-class FramewisePixelBlinkDetector(FramewiseBlinkDetector):
+class PixelBlinkDetector(FramewiseBlinkDetector):
 
     def compute_framewise_changes(self, frames):
         pixels = []
