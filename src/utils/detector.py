@@ -111,5 +111,25 @@ class FramewisePixelBlinkDetector(FramewiseBlinkDetector):
         return np.abs(np.diff(pixels, axis=0)).mean()
 
 
+class VerticalDistanceBlinkDetector(FramewiseBlinkDetector):
+
+    def compute_framewise_changes(self, frames):
+        vertical_distances = []
+        for frame in frames:
+            landmarks = self.eye_detector.get_eye_landmarks(frame)
+            if landmarks['left_eye'] and landmarks['right_eye']:
+                left_eye_top = min(landmarks['left_eye'], key=lambda x: x[1])[1]
+                left_eye_bottom = max(landmarks['left_eye'], key=lambda x: x[1])[1]
+                right_eye_top = min(landmarks['right_eye'], key=lambda x: x[1])[1]
+                right_eye_bottom = max(landmarks['right_eye'], key=lambda x: x[1])[1]
+
+                left_eye_distance = left_eye_bottom - left_eye_top
+                right_eye_distance = right_eye_bottom - right_eye_top
+
+                vertical_distances.append((left_eye_distance + right_eye_distance) / 2)
+
+        vertical_distances = np.array(vertical_distances)
+        print(np.abs(np.diff(vertical_distances, axis=0)))
+        return np.abs(np.diff(vertical_distances, axis=0))
 if __name__ == "__main__":
     pass
