@@ -1,9 +1,19 @@
 import cv2
 import numpy as np
 import mediapipe as mp
+import dlib
 
 
-class EyeLandmarksDetector:
+class BaseEyeLandmarksDetector:
+
+    def get_eye_landmarks(self, frame):
+        raise NotImplementedError
+
+    def create_eye_mask(self, frame, side='left+right'):
+        raise NotImplementedError
+
+
+class FaceMeshLandmarksDetector(BaseEyeLandmarksDetector):
     LEFT_EYE_LANDMARKS = [33, 160, 158, 133, 153, 144]
     RIGHT_EYE_LANDMARKS = [362, 385, 387, 263, 373, 380]
     
@@ -31,12 +41,13 @@ class EyeLandmarksDetector:
                 for i in self.RIGHT_EYE_LANDMARKS]
         return eye_landmarks
 
-    def create_eye_mask(self, frame):
+    def create_eye_mask(self, frame, side='left+right'):
         landmarks = self.get_eye_landmarks(frame)
         mask = np.zeros(frame.shape[:2], dtype=np.uint8)
         
-        if landmarks['left_eye'] and landmarks['right_eye']:
+        if landmarks['left_eye'] and 'left' in side:
             cv2.fillPoly(mask, [np.array(landmarks['left_eye'], dtype=np.int32)], 1)
+        if landmarks['right_eye'] and 'right' in side:
             cv2.fillPoly(mask, [np.array(landmarks['right_eye'], dtype=np.int32)], 1)
         
         return mask.astype(bool)
@@ -63,7 +74,44 @@ class EyeLandmarksDetector:
         mask[slice_left_x, slice_left_y] = True
         mask[slice_right_x, slice_right_y] = True
         return mask
-        
+
+
+class DLIBLandmarksDetector(BaseEyeLandmarksDetector):
+    LEFT_EYE_LANDMARKS = list(range(36, 42))  # Dlib 68-point model indices for left eye
+    RIGHT_EYE_LANDMARKS = list(range(42, 48))  # Dlib 68-point model indices for right eye
+
+    def __init__(self, predictor_path="assets/shape_predictor_68_face_landmarks.dat", mask_size=16):
+        self.mask_size = mask_size
+        self.detector = dlib.get_frontal_face_detector()  # Initialize face detector
+        # Load 68-point facial landmark predictor model
+        self.predictor = dlib.shape_predictor(predictor_path)
+
+    def get_eye_landmarks(self, frame):
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        faces = self.detector(gray)
+        eye_landmarks = {'left_eye': [], 'right_eye': []}
+
+        if faces:
+            face = faces[0]  # Assuming only one face
+            landmarks = self.predictor(gray, face)
+
+            # Extract left and right eye landmarks
+            eye_landmarks['left_eye'] = [(landmarks.part(i).x, landmarks.part(i).y) for i in self.LEFT_EYE_LANDMARKS]
+            eye_landmarks['right_eye'] = [(landmarks.part(i).x, landmarks.part(i).y) for i in self.RIGHT_EYE_LANDMARKS]
+
+        return eye_landmarks
+
+    def create_eye_mask(self, frame, side='left+right'):
+        landmarks = self.get_eye_landmarks(frame)
+        mask = np.zeros(frame.shape[:2], dtype=np.uint8)
+
+        if landmarks['left_eye'] and 'left' in side:
+            cv2.fillPoly(mask, [np.array(landmarks['left_eye'], dtype=np.int32)], 1)
+        if landmarks['right_eye'] and 'right' in side:
+            cv2.fillPoly(mask, [np.array(landmarks['right_eye'], dtype=np.int32)], 1)
+
+        return mask.astype(bool)
+
 
 class FramewiseBlinkDetector:
 
@@ -87,7 +135,7 @@ class FramewiseBlinkDetector:
         raise NotImplementedError
     
 
-class FramewiseIntensityBlinkDetector(FramewiseBlinkDetector):
+class IntensityBlinkDetector(FramewiseBlinkDetector):
 
     def compute_framewise_changes(self, frames):
         mean_intensity = []
@@ -97,9 +145,47 @@ class FramewiseIntensityBlinkDetector(FramewiseBlinkDetector):
         
         mean_intensity = np.stack(mean_intensity)
         return np.abs(np.diff(mean_intensity, axis=0))
+    
+
+class SymmetryBlinkDetector(FramewiseBlinkDetector):
+
+    def compute_framewise_changes(self, frames):
+        mean_intensity_left = []
+        mean_intensity_right = []
+        for frame in frames:
+            mask = self.eye_detector.create_eye_mask(frame, side='left')
+            mean_intensity_left.append(frame[mask].mean())
+            mask = self.eye_detector.create_eye_mask(frame, side='right')
+            mean_intensity_right.append(frame[mask].mean())
+
+        mean_intensity_left = np.stack(mean_intensity_left)
+        changes_left = np.abs(np.diff(mean_intensity_left, axis=0))
+
+        mean_intensity_right = np.stack(mean_intensity_right)
+        changes_right = np.abs(np.diff(mean_intensity_right, axis=0))
+        return changes_left * changes_right
 
 
-class FramewisePixelBlinkDetector(FramewiseBlinkDetector):
+class SurfaceBlinkDetector(FramewiseBlinkDetector):
+
+    def compute_framewise_changes(self, frames):
+        mean_size_left = []
+        mean_size_right = []
+        for frame in frames:
+            mask = self.eye_detector.create_eye_mask(frame, side='left')
+            mean_size_left.append(mask.sum())
+            mask = self.eye_detector.create_eye_mask(frame, side='right')
+            mean_size_right.append(mask.sum())
+
+        mean_size_left = np.stack(mean_size_left)
+        changes_left = np.abs(np.diff(mean_size_left, axis=0))
+
+        mean_size_right = np.stack(mean_size_right)
+        changes_right = np.abs(np.diff(mean_size_right, axis=0))
+        return changes_left + changes_right
+
+
+class PixelBlinkDetector(FramewiseBlinkDetector):
 
     def compute_framewise_changes(self, frames):
         pixels = []
