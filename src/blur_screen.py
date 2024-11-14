@@ -10,9 +10,6 @@ class BlurWindow(QtWidgets.QWidget):
         self.setAttribute(QtCore.Qt.WA_TransparentForMouseEvents, True)
 
         # Get screen size
-        #screen = QtWidgets.QApplication.primaryScreen()
-        size = screen.size()
-        #self.setGeometry(0, 0, size.width(), size.height())
         self.setGeometry(screen.geometry())
 
         # Timer for gradual blur
