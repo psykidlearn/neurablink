@@ -1,0 +1,8 @@
+blink_detector: 
+  _target_: src.utils.detector.VerticalDistanceBlinkDetector
+  eye_detector: 
+    _target_: src.utils.detector.FaceMeshLandmarksDetector
+  calibrator:
+    _target_: src.utils.detector.OneTimeCalibrator
+    buffer_size: 500
+    quantile: 0.95
