@@ -140,23 +140,35 @@ class DLIBLandmarksDetector(BaseEyeLandmarksDetector):
         return mask.astype(bool)
 
 
+class OneTimeCalibrator:
+
+    def __init__(self, buffer_size=500, quantile=0.95):
+        self.quantile = quantile
+        self.buffer_size = buffer_size
+        self.buffer = []
+        self.threshold = None
+
+    def __call__(self, changes):
+        if len(self.buffer) == self.buffer_size:
+            if not self.threshold:
+                self.threshold = np.quantile(
+                    self.buffer.ravel(), self.quantile
+                    )
+            return self.threshold
+        self.buffer.append(changes)
+        return np.inf
+
+
 class FramewiseBlinkDetector:
 
-    def __init__(self, eye_detector, threshold=None):
+    def __init__(self, eye_detector, calibrator):
         self.eye_detector = eye_detector
-        self.threshold = threshold
-
-    def auto_compute_threshold(self, frames, quantile=0.95):
-        assert len(frames) > 250, "need at least about 10 sec of frames"
-        framewise_changes = self.compute_framewise_changes(frames)
-        self.threshold = np.quantile(framewise_changes.ravel(), quantile)
+        self.calibrator = calibrator
 
     def is_event(self, frames):
-        assert self.threshold, """
-        either initialize with the threshold or use auto_compute_threshold
-        """
         changes = self.compute_framewise_changes(frames)
-        self.is_above_threshold(changes)
+        self.threshold = self.calibrator(changes)
+        return self.is_above_threshold(changes)
 
     def is_above_threshold(self, changes):
         return (changes > self.threshold).any()
