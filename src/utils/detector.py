@@ -3,6 +3,7 @@ import numpy as np
 import mediapipe as mp
 import dlib
 from sklearn.cluster import KMeans
+from PyQt5.QtCore import QObject, pyqtSignal
 
 
 class BaseEyeLandmarksDetector:
@@ -140,9 +141,11 @@ class DLIBLandmarksDetector(BaseEyeLandmarksDetector):
         return mask.astype(bool)
 
 
-class FramewiseBlinkDetector:
+class FramewiseBlinkDetector(QObject):
+    blink_detected = pyqtSignal()
 
     def __init__(self, eye_detector, threshold=None):
+        super().__init__()
         self.eye_detector = eye_detector
         self.threshold = threshold
 
@@ -156,7 +159,8 @@ class FramewiseBlinkDetector:
         either initialize with the threshold or use auto_compute_threshold
         """
         changes = self.compute_framewise_changes(frames)
-        self.is_above_threshold(changes)
+        if self.is_above_threshold(changes):
+            self.blink_detected.emit()
 
     def is_above_threshold(self, changes):
         return (changes > self.threshold).any()
