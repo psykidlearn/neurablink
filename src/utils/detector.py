@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import mediapipe as mp
 import dlib
+from sklearn.cluster import KMeans
 
 
 class BaseEyeLandmarksDetector:
@@ -23,6 +24,32 @@ class FaceMeshLandmarksDetector(BaseEyeLandmarksDetector):
             static_image_mode=False, max_num_faces=1, refine_landmarks=True
             )
         self.mask_size = mask_size
+
+    def get_eye_landmarks_on_zoom(self, frame):
+        eye_landmarks = self.get_eye_landmarks(frame)
+        centered_frame = self.crop_frame(frame, eye_landmarks)
+        return self.get_eye_landmarks(centered_frame)
+    
+    def crop_frame(self, frame, eye_landmarks):
+
+        left_eye_center = np.mean(eye_landmarks['left_eye'], axis=0)
+        right_eye_center = np.mean(eye_landmarks['right_eye'], axis=0)
+        eyes_center = (left_eye_center + right_eye_center) / 2
+
+        eye2eye = np.linalg.norm(left_eye_center - right_eye_center)
+
+        x_min = max(0, int(eyes_center[0] - 2 * eye2eye))
+        x_max = min(frame.shape[1], int(eyes_center[0] + 2 * eye2eye))
+        y_min = max(0, int(eyes_center[1] - 2 * eye2eye))
+        y_max = min(frame.shape[0], int(eyes_center[1] + 2 * eye2eye))
+
+        cropped_frame = frame[y_min:y_max, x_min:x_max]
+
+        min_dim = min(frame.shape[:2])
+
+        resized_frame = cv2.resize(cropped_frame, (min_dim, min_dim))
+
+        return resized_frame
 
     def get_eye_landmarks(self, frame):
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -128,12 +155,15 @@ class FramewiseBlinkDetector:
         assert self.threshold, """
         either initialize with the threshold or use auto_compute_threshold
         """
-        mean_intensity_changes = self.compute_framewise_changes(frames)
-        return (mean_intensity_changes > self.threshold).any()
+        changes = self.compute_framewise_changes(frames)
+        self.is_above_threshold(changes)
+
+    def is_above_threshold(self, changes):
+        return (changes > self.threshold).any()
 
     def compute_framewise_changes(self, frames):
         raise NotImplementedError
-    
+
 
 class IntensityBlinkDetector(FramewiseBlinkDetector):
 
@@ -215,7 +245,53 @@ class VerticalDistanceBlinkDetector(FramewiseBlinkDetector):
                 vertical_distances.append((left_eye_distance + right_eye_distance) / 2)
 
         vertical_distances = np.array(vertical_distances)
-        print(np.abs(np.diff(vertical_distances, axis=0)))
         return np.abs(np.diff(vertical_distances, axis=0))
+
+
+class UniformityBlinkDetector(FramewiseBlinkDetector):
+
+    def compute_framewise_changes(self, frames):
+        mean_size_left = []
+        mean_size_right = []
+        for frame in frames:
+            mask = self.eye_detector.create_eye_mask(frame, side='left')
+            mean_size_left.append(frame[mask].var(0))
+            mask = self.eye_detector.create_eye_mask(frame, side='right')
+            mean_size_right.append(frame[mask].var(0))
+
+        mean_size_left = np.stack(mean_size_left)
+        changes_left = np.abs(np.diff(mean_size_left, axis=0))
+
+        mean_size_right = np.stack(mean_size_right)
+        changes_right = np.abs(np.diff(mean_size_right, axis=0))
+        return changes_left + changes_right
+
+
+class CombinedBlinkDetector:
+
+    def __init__(self, eye_detector, blink_detectors, cluster=None):
+        self.eye_detector = eye_detector
+        self.cluster = cluster
+        self.blink_detectors = blink_detectors
+    
+    def auto_compute_clusters(self, frames):
+        assert len(frames) > 500, "need at least about 20 sec of frames"
+        framewise_changes = self.aggregate_changes(frames)
+        kmeans = KMeans(n_clusters=3, random_state=0)
+        cluster_ids = kmeans.fit_predict(framewise_changes)
+        return cluster_ids
+
+    def aggregate_changes(self, frames):
+        framewise_changes = []
+        for blink_detector in self.blink_detectors:
+            change = blink_detector.compute_framewise_changes(frames)
+            framewise_changes.append(change)
+        
+        return np.array(framewise_changes)
+
+    def is_event(self, frames):
+        pass
+
+
 if __name__ == "__main__":
     pass
