@@ -105,13 +105,16 @@ class FaceMeshLandmarksDetector(BaseEyeLandmarksDetector):
 
 
 class DLIBLandmarksDetector(BaseEyeLandmarksDetector):
-    LEFT_EYE_LANDMARKS = list(range(36, 42))  # Dlib 68-point model indices for left eye
-    RIGHT_EYE_LANDMARKS = list(range(42, 48))  # Dlib 68-point model indices for right eye
+    LEFT_EYE_LANDMARKS = list(range(36, 42))  # indices for left eye
+    RIGHT_EYE_LANDMARKS = list(range(42, 48))  # indices for right eye
 
-    def __init__(self, predictor_path="assets/shape_predictor_68_face_landmarks.dat", mask_size=16):
+    def __init__(
+            self,
+            predictor_path="assets/shape_predictor_68_face_landmarks.dat",
+            mask_size=16
+            ):
         self.mask_size = mask_size
-        self.detector = dlib.get_frontal_face_detector()  # Initialize face detector
-        # Load 68-point facial landmark predictor model
+        self.detector = dlib.get_frontal_face_detector() 
         self.predictor = dlib.shape_predictor(predictor_path)
 
     def get_eye_landmarks(self, frame):
@@ -120,12 +123,15 @@ class DLIBLandmarksDetector(BaseEyeLandmarksDetector):
         eye_landmarks = {'left_eye': [], 'right_eye': []}
 
         if faces:
-            face = faces[0]  # Assuming only one face
+            face = faces[0]
             landmarks = self.predictor(gray, face)
 
-            # Extract left and right eye landmarks
-            eye_landmarks['left_eye'] = [(landmarks.part(i).x, landmarks.part(i).y) for i in self.LEFT_EYE_LANDMARKS]
-            eye_landmarks['right_eye'] = [(landmarks.part(i).x, landmarks.part(i).y) for i in self.RIGHT_EYE_LANDMARKS]
+            eye_landmarks['left_eye'] = [
+                (landmarks.part(i).x, landmarks.part(i).y) 
+                for i in self.LEFT_EYE_LANDMARKS]
+            eye_landmarks['right_eye'] = [
+                (landmarks.part(i).x, landmarks.part(i).y) 
+                for i in self.RIGHT_EYE_LANDMARKS]
 
         return eye_landmarks
 
