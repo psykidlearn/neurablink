@@ -167,11 +167,11 @@ class BufferedModule:
         self.buffer = []
 
     def __call__(self, x):
+        self.buffer.append(x)
         if self.buffer_size == len(self.buffer):
             out = self.module(self.buffer)
             self.buffer.pop(0)
             return out
-        self.buffer.append(x)
 
 
 class FramewiseBlinkDetector:
