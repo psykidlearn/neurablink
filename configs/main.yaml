@@ -9,3 +9,4 @@ blink_detector:
       buffer_size: 50
       quantile: 0.95
   buffer_size: 3
+verbose: false
