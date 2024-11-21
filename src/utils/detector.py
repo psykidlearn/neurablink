@@ -93,7 +93,34 @@ class OneTimeCalibrator:
             return self.threshold
         self.buffer.append(changes)
         return np.inf
-    
+
+
+class PeriodicCalibrator:
+
+    def __init__(self, every_nth_frame=3000, buffer_size=500, quantile=0.95):
+        self.quantile = quantile
+        self.buffer_size = buffer_size
+        self.every_nth_frame = every_nth_frame
+        self.buffer = []
+        self.threshold = None
+        self.counter = 0
+
+    def __call__(self, changes):
+
+        if self.counter == self.every_nth_frame:
+            self.buffer = []
+            self.threshold = None
+            self.counter = 0
+
+        if len(self.buffer) == self.buffer_size:
+            if not self.threshold:
+                self.threshold = np.quantile(
+                    np.stack(self.buffer, axis=0).ravel(), self.quantile
+                    )
+            return self.threshold
+        self.buffer.append(changes)
+        return np.inf
+
 
 class BufferedModule:
     
