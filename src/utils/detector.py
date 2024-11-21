@@ -29,16 +29,17 @@ class FaceMeshLandmarksDetector(BaseEyeLandmarksDetector):
         results = self.face_mesh.process(rgb_frame)
         eye_landmarks = {'left_eye': [], 'right_eye': []}
 
-        if results.multi_face_landmarks:
-            face_landmarks = results.multi_face_landmarks[0]
-            eye_landmarks['left_eye'] = [(
-                int(face_landmarks.landmark[i].x * frame.shape[1]),
-                int(face_landmarks.landmark[i].y * frame.shape[0])) 
-                for i in self.LEFT_EYE_LANDMARKS]
-            eye_landmarks['right_eye'] = [(
-                int(face_landmarks.landmark[i].x * frame.shape[1]),
-                int(face_landmarks.landmark[i].y * frame.shape[0])) 
-                for i in self.RIGHT_EYE_LANDMARKS]
+        if results.multi_face_landmarks:  # use prev landmarks as default
+            self.face_landmarks = results.multi_face_landmarks[0]
+
+        eye_landmarks['left_eye'] = [(
+            int(self.face_landmarks.landmark[i].x * frame.shape[1]),
+            int(self.face_landmarks.landmark[i].y * frame.shape[0])) 
+            for i in self.LEFT_EYE_LANDMARKS]
+        eye_landmarks['right_eye'] = [(
+            int(self.face_landmarks.landmark[i].x * frame.shape[1]),
+            int(self.face_landmarks.landmark[i].y * frame.shape[0])) 
+            for i in self.RIGHT_EYE_LANDMARKS]
         return eye_landmarks
 
     def create_eye_mask(self, frame, side='left+right'):
