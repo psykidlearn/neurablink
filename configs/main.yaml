@@ -5,8 +5,19 @@ blink_detector:
     eye_detector: 
       _target_: utils.detector.FaceMeshLandmarksDetector
     calibrator:
-      _target_: utils.detector.OneTimeCalibrator
-      buffer_size: 50
-      quantile: 0.95
+      _target_: utils.detector.PeriodicCalibrator
+      every_nth_frame: 3000
+      buffer_size: 100
+      quantile: 0.975
   buffer_size: 3
 verbose: false
+
+defaults:  
+  - _self_  
+  - override hydra/hydra_logging: disabled  
+  - override hydra/job_logging: disabled  
+  
+hydra:  
+  output_subdir: null  
+  run:  
+    dir: .
