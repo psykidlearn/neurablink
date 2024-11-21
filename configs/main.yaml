@@ -1,8 +1,11 @@
 blink_detector: 
-  _target_: src.utils.detector.VerticalDistanceBlinkDetector
-  eye_detector: 
-    _target_: src.utils.detector.FaceMeshLandmarksDetector
-  calibrator:
-    _target_: src.utils.detector.OneTimeCalibrator
-    buffer_size: 500
-    quantile: 0.95
+  _target_: utils.detector.BufferedModule
+  module:
+    _target_: utils.detector.VerticalDistanceBlinkDetector
+    eye_detector: 
+      _target_: utils.detector.FaceMeshLandmarksDetector
+    calibrator:
+      _target_: utils.detector.OneTimeCalibrator
+      buffer_size: 50
+      quantile: 0.95
+  buffer_size: 3

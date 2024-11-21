@@ -152,11 +152,26 @@ class OneTimeCalibrator:
         if len(self.buffer) == self.buffer_size:
             if not self.threshold:
                 self.threshold = np.quantile(
-                    self.buffer.ravel(), self.quantile
+                    np.stack(self.buffer, axis=0).ravel(), self.quantile
                     )
             return self.threshold
         self.buffer.append(changes)
         return np.inf
+    
+
+class BufferedModule:
+    
+    def __init__(self, module, buffer_size):
+        self.module = module
+        self.buffer_size = buffer_size
+        self.buffer = []
+
+    def __call__(self, x):
+        if self.buffer_size == len(self.buffer):
+            out = self.module(self.buffer)
+            self.buffer.pop(0)
+            return out
+        self.buffer.append(x)
 
 
 class FramewiseBlinkDetector:
@@ -165,7 +180,7 @@ class FramewiseBlinkDetector:
         self.eye_detector = eye_detector
         self.calibrator = calibrator
 
-    def is_event(self, frames):
+    def __call__(self, frames):
         changes = self.compute_framewise_changes(frames)
         self.threshold = self.calibrator(changes)
         return self.is_above_threshold(changes)
