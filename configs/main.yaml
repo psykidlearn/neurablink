@@ -11,3 +11,13 @@ blink_detector:
       quantile: 0.975
   buffer_size: 3
 verbose: false
+
+defaults:  
+  - _self_  
+  - override hydra/hydra_logging: disabled  
+  - override hydra/job_logging: disabled  
+  
+hydra:  
+  output_subdir: null  
+  run:  
+    dir: .
