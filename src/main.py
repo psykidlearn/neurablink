@@ -9,18 +9,21 @@ from omegaconf import DictConfig
 @hydra.main(version_base=None, config_path="../configs", config_name="main")
 def main(cfg: DictConfig):
 
-    blink_detector = hydra.utils.instantiate(cfg.blink_detector)
-
     # app = QtWidgets.QApplication([])
+    blink_detector = hydra.utils.instantiate(cfg.blink_detector)
 
     cap = cv2.VideoCapture(0)
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
             break
-        if blink_detector(frame):
-            cv2.imshow(frame)
 
+        is_blink = blink_detector(frame)
+        if cfg.verbose:
+            print(is_blink)
+
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
 
 
 if __name__ == "__main__":
