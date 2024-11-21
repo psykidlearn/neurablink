@@ -1,1 +1,240 @@
+from PyQt5 import QtWidgets, QtGui, QtCore
 
+class ControlWindow(QtWidgets.QWidget):
+    def __init__(self, blur_windows, icon_path:str):
+        super().__init__()
+        self.blur_windows = blur_windows
+        self.initUI(icon_path)
+
+    def initUI(self, icon_path:str):
+        self.setWindowTitle('Neurablink - Control Panel')
+        self.setGeometry(100, 100, 400, 300)  # Slightly larger default size
+
+        # Set window icon
+        icon = QtGui.QIcon(icon_path)  # Replace with your logo path
+        self.setWindowIcon(icon)
+
+        # Main layout
+        self.layout = QtWidgets.QVBoxLayout()
+        self.layout.setContentsMargins(20, 20, 20, 20)  # Add margins
+        self.layout.setSpacing(15)  # Add spacing between widgets
+
+        # Title label
+        self.title_label = QtWidgets.QLabel('Neurablink - Blink Detector')
+        self.title_label.setAlignment(QtCore.Qt.AlignCenter)
+        self.title_label.setStyleSheet("font-size: 18px; font-weight: bold; color: #2E86C1;")
+        self.layout.addWidget(self.title_label)
+
+        # Description label
+        self.description_label = QtWidgets.QLabel(
+            'Press "Start" to begin the blink detection tracking.\n'
+            'Press "Stop" to halt the process and clear the screen.'
+        )
+        self.description_label.setAlignment(QtCore.Qt.AlignCenter)
+        self.description_label.setStyleSheet("font-size: 14px; color: #5D6D7E;")
+        self.layout.addWidget(self.description_label)
+
+        # Button layout
+        button_layout = QtWidgets.QHBoxLayout()
+        button_layout.setSpacing(10)
+
+        # Start button
+        self.start_button = QtWidgets.QPushButton('Start')
+        self.start_button.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.start_button.setMinimumSize(100, 40)
+        self.start_button.setStyleSheet("""
+            QPushButton {
+                background-color: #28B463; 
+                color: white; 
+                font-size: 14px; 
+                border-radius: 10px;
+                padding: 10px;
+            }
+            QPushButton:hover {
+                background-color: #239B56;
+            }
+        """)
+        self.start_button.clicked.connect(self.start_application)
+        button_layout.addWidget(self.start_button)
+
+        # Stop button
+        self.stop_button = QtWidgets.QPushButton('Stop')
+        self.stop_button.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.stop_button.setMinimumSize(100, 40)
+        self.stop_button.setStyleSheet("""
+            QPushButton {
+                background-color: #CB4335; 
+                color: white; 
+                font-size: 14px; 
+                border-radius: 10px;
+                padding: 10px;
+            }
+            QPushButton:hover {
+                background-color: #B03A2E;
+            }
+        """)
+        self.stop_button.clicked.connect(self.stop_application)
+        button_layout.addWidget(self.stop_button)
+
+        self.layout.addLayout(button_layout)
+        self.setLayout(self.layout)
+        self.update_styles()
+        self.show()
+
+    def resizeEvent(self, event):
+        self.update_styles()
+        super().resizeEvent(event)
+
+    def update_styles(self):
+        width = self.width()
+        height = self.height()
+
+        # Update font sizes based on window size
+        title_font_size = max(14, width // 20)
+        description_font_size = max(12, width // 30)
+        button_font_size = max(12, width // 25)
+
+        # Update styles
+        self.title_label.setStyleSheet(f"font-size: {title_font_size}px; font-weight: bold; color: #2E86C1;")
+        self.description_label.setStyleSheet(f"font-size: {description_font_size}px; color: #5D6D7E;")
+        self.start_button.setStyleSheet(f"""
+            QPushButton {{
+                background-color: #28B463; 
+                color: white; 
+                font-size: {button_font_size}px; 
+                border-radius: 10px;
+                padding: 10px;
+            }}
+            QPushButton:hover {{
+                background-color: #239B56;
+            }}
+        """)
+        self.stop_button.setStyleSheet(f"""
+            QPushButton {{
+                background-color: #CB4335; 
+                color: white; 
+                font-size: {button_font_size}px; 
+                border-radius: 10px;
+                padding: 10px;
+            }}
+            QPushButton:hover {{
+                background-color: #B03A2E;
+            }}
+        """)
+
+    def keyPressEvent(self, event):
+        if event.key() in (QtCore.Qt.Key_Return, QtCore.Qt.Key_Enter, QtCore.Qt.Key_Space):
+            event.ignore()  # Ignore the Enter and Space key presses
+        else:
+            super().keyPressEvent(event)
+
+    def start_application(self):
+        reset_all_windows(self.blur_windows)  # Reset all windows before starting
+        for window in self.blur_windows:
+            window.showFullScreen()
+            window.start_opacity()  # Start the blurring process
+
+        # Disable the start button, change its appearance, and update its text
+        self.start_button.setEnabled(False)
+        self.start_button.setText("Detecting your Blinks...")
+        self.start_button.setStyleSheet("background-color: #A9A9A9; color: white; font-size: 14px;")
+
+    def stop_application(self):
+        for window in self.blur_windows:
+            window.hide()
+
+        # Re-enable the start button, restore its original appearance, and update its text
+        self.start_button.setEnabled(True)
+        self.start_button.setText("Start")
+        self.start_button.setStyleSheet("background-color: #28B463; color: white; font-size: 14px;")
+
+    def closeEvent(self, event):
+        #Closing control window will stop the application
+        self.stop_application()  
+        event.accept()  
+
+
+class BlurWindow(QtWidgets.QWidget):
+    def __init__(self, screen):
+        super().__init__()
+        self.setWindowFlags(QtCore.Qt.FramelessWindowHint | QtCore.Qt.WindowStaysOnTopHint)
+        self.setWindowFlags(self.windowFlags() | QtCore.Qt.WindowTransparentForInput)
+        self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
+        self.setAttribute(QtCore.Qt.WA_TransparentForMouseEvents, True)
+
+        # Get screen size
+        self.setGeometry(screen.geometry())
+
+        # Timer for gradual blur
+        self.timer = QtCore.QTimer()
+        self.timer.timeout.connect(self.increase_opacity)
+
+        # Opacity settings
+        self.opacity_level = 0
+        self.max_opacity_level = 155  # Maximum opacity level
+        self.opacity_step = 3  # Opacity increment per step
+
+        # Timer for initial delay
+        self.initial_delay_timer = QtCore.QTimer()
+        self.initial_delay_timer.timeout.connect(self.start_opacity_increase)
+        self.initial_delay_seconds = 5  # Delay in seconds before opacity starts increasing
+
+        # Start the initial delay timer
+        #self.initial_delay_timer.start(self.initial_delay_seconds * 1000)
+
+    def start_opacity(self):
+        #Called by control window to start the application
+        self.reset_opacity()  # Ensure opacity is reset before starting
+        self.initial_delay_timer.start(self.initial_delay_seconds * 1000)  # Start the initial delay timer
+    
+    def start_opacity_increase(self):
+        self.initial_delay_timer.stop()
+        self.timer.start(50)  # Start the opacity increase timer
+
+    @QtCore.pyqtSlot()
+    def reset_opacity(self):
+        self.opacity_level = 0
+        self.timer.stop()  # Stop the opacity increase timer
+        self.initial_delay_timer.start(self.initial_delay_seconds * 1000)  # Restart the initial delay timer
+        self.update()
+
+    def paintEvent(self, event):
+        painter = QtGui.QPainter(self)
+        painter.setRenderHint(QtGui.QPainter.Antialiasing)
+        painter.fillRect(self.rect(), QtGui.QColor(0, 0, 0, self.opacity_level))
+        painter.end()
+    
+    def increase_opacity(self): 
+        if self.opacity_level < self.max_opacity_level:
+            self.opacity_level += self.opacity_step
+            self.update()
+        else:
+            self.timer.stop()
+
+def reset_all_windows(blur_windows):  
+    for window in blur_windows:
+        # Use invokeMethod to ensure the method is called in the correct thread
+        QtCore.QMetaObject.invokeMethod(window, "reset_opacity", QtCore.Qt.QueuedConnection)
+
+def main():
+    app = QtWidgets.QApplication([])
+    app.setWindowIcon(QtGui.QIcon("C:/Users/s_gue/Desktop/projects/neurablink/src/files/icon.png"))
+    blur_windows = []
+    for screen in app.screens():
+        blur_window = BlurWindow(screen)
+        blur_window.setGeometry(screen.geometry())  # Set the geometry to the screen's geometry
+        blur_window.showFullScreen()  # Show the window in full screen mode
+        blur_windows.append(blur_window)
+
+    control_window = ControlWindow(blur_windows)
+    #Get camera stream with eye segmentation
+    # cap = cv2.VideoCapture(0)
+    # eye_detector = FaceMeshLandmarksDetector()
+    # blink_detector = VerticalDistanceBlinkDetector(eye_detector)
+    # blink_detector.blink_detected.connect(lambda: reset_all_windows(blur_windows))
+
+    keyboard.add_hotkey('space', reset_all_windows, args=(blur_windows,))
+    app.exec_()
+
+if __name__ == "__main__":
+    main() 
