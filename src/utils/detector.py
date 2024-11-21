@@ -1,8 +1,6 @@
 import cv2
 import numpy as np
 import mediapipe as mp
-import dlib
-from sklearn.cluster import KMeans
 from PyQt5.QtCore import QObject, pyqtSignal
 
 
@@ -25,32 +23,6 @@ class FaceMeshLandmarksDetector(BaseEyeLandmarksDetector):
             static_image_mode=False, max_num_faces=1, refine_landmarks=True
             )
         self.mask_size = mask_size
-
-    def get_eye_landmarks_on_zoom(self, frame):
-        eye_landmarks = self.get_eye_landmarks(frame)
-        centered_frame = self.crop_frame(frame, eye_landmarks)
-        return self.get_eye_landmarks(centered_frame)
-    
-    def crop_frame(self, frame, eye_landmarks):
-
-        left_eye_center = np.mean(eye_landmarks['left_eye'], axis=0)
-        right_eye_center = np.mean(eye_landmarks['right_eye'], axis=0)
-        eyes_center = (left_eye_center + right_eye_center) / 2
-
-        eye2eye = np.linalg.norm(left_eye_center - right_eye_center)
-
-        x_min = max(0, int(eyes_center[0] - 2 * eye2eye))
-        x_max = min(frame.shape[1], int(eyes_center[0] + 2 * eye2eye))
-        y_min = max(0, int(eyes_center[1] - 2 * eye2eye))
-        y_max = min(frame.shape[0], int(eyes_center[1] + 2 * eye2eye))
-
-        cropped_frame = frame[y_min:y_max, x_min:x_max]
-
-        min_dim = min(frame.shape[:2])
-
-        resized_frame = cv2.resize(cropped_frame, (min_dim, min_dim))
-
-        return resized_frame
 
     def get_eye_landmarks(self, frame):
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -102,49 +74,6 @@ class FaceMeshLandmarksDetector(BaseEyeLandmarksDetector):
         mask[slice_left_x, slice_left_y] = True
         mask[slice_right_x, slice_right_y] = True
         return mask
-
-
-class DLIBLandmarksDetector(BaseEyeLandmarksDetector):
-    LEFT_EYE_LANDMARKS = list(range(36, 42))  # indices for left eye
-    RIGHT_EYE_LANDMARKS = list(range(42, 48))  # indices for right eye
-
-    def __init__(
-            self,
-            predictor_path="assets/shape_predictor_68_face_landmarks.dat",
-            mask_size=16
-            ):
-        self.mask_size = mask_size
-        self.detector = dlib.get_frontal_face_detector() 
-        self.predictor = dlib.shape_predictor(predictor_path)
-
-    def get_eye_landmarks(self, frame):
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        faces = self.detector(gray)
-        eye_landmarks = {'left_eye': [], 'right_eye': []}
-
-        if faces:
-            face = faces[0]
-            landmarks = self.predictor(gray, face)
-
-            eye_landmarks['left_eye'] = [
-                (landmarks.part(i).x, landmarks.part(i).y) 
-                for i in self.LEFT_EYE_LANDMARKS]
-            eye_landmarks['right_eye'] = [
-                (landmarks.part(i).x, landmarks.part(i).y) 
-                for i in self.RIGHT_EYE_LANDMARKS]
-
-        return eye_landmarks
-
-    def create_eye_mask(self, frame, side='left+right'):
-        landmarks = self.get_eye_landmarks(frame)
-        mask = np.zeros(frame.shape[:2], dtype=np.uint8)
-
-        if landmarks['left_eye'] and 'left' in side:
-            cv2.fillPoly(mask, [np.array(landmarks['left_eye'], dtype=np.int32)], 1)
-        if landmarks['right_eye'] and 'right' in side:
-            cv2.fillPoly(mask, [np.array(landmarks['right_eye'], dtype=np.int32)], 1)
-
-        return mask.astype(bool)
 
 
 class OneTimeCalibrator:
@@ -304,32 +233,6 @@ class UniformityBlinkDetector(FramewiseBlinkDetector):
         mean_size_right = np.stack(mean_size_right)
         changes_right = np.abs(np.diff(mean_size_right, axis=0))
         return changes_left + changes_right
-
-
-class CombinedBlinkDetector:
-
-    def __init__(self, eye_detector, blink_detectors, cluster=None):
-        self.eye_detector = eye_detector
-        self.cluster = cluster
-        self.blink_detectors = blink_detectors
-    
-    def auto_compute_clusters(self, frames):
-        assert len(frames) > 500, "need at least about 20 sec of frames"
-        framewise_changes = self.aggregate_changes(frames)
-        kmeans = KMeans(n_clusters=3, random_state=0)
-        cluster_ids = kmeans.fit_predict(framewise_changes)
-        return cluster_ids
-
-    def aggregate_changes(self, frames):
-        framewise_changes = []
-        for blink_detector in self.blink_detectors:
-            change = blink_detector.compute_framewise_changes(frames)
-            framewise_changes.append(change)
-        
-        return np.array(framewise_changes)
-
-    def is_event(self, frames):
-        pass
 
 
 if __name__ == "__main__":
