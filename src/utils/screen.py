@@ -212,11 +212,16 @@ class BlurWindow(QtWidgets.QWidget):
         else:
             self.timer.stop()
 
-def reset_all_windows(blur_windows, control_window=None):  
-    if control_window.start_button.isEnabled():
-        for window in blur_windows:
-            # Use invokeMethod to ensure the method is called in the correct thread
-            QtCore.QMetaObject.invokeMethod(window, "reset_opacity", QtCore.Qt.QueuedConnection)
+def reset_all_windows(blur_windows):  
+    for window in blur_windows:
+        # Use invokeMethod to ensure the method is called in the correct thread
+        QtCore.QMetaObject.invokeMethod(window, "reset_opacity", QtCore.Qt.QueuedConnection)
+
+# def reset_all_windows(blur_windows, control_window=None):  
+#     if control_window.start_button.isEnabled():
+#         for window in blur_windows:
+#             # Use invokeMethod to ensure the method is called in the correct thread
+#             QtCore.QMetaObject.invokeMethod(window, "reset_opacity", QtCore.Qt.QueuedConnection)
 
 def main():
     app = QtWidgets.QApplication([])
