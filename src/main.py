@@ -8,51 +8,74 @@ import sys
 
 @hydra.main(version_base=None, config_path="../configs", config_name="main")
 def main(cfg: DictConfig):
-
-    # app = QtWidgets.QApplication([])
+    # Instantiate the blink detector from configuration
     blink_detector = hydra.utils.instantiate(cfg.blink_detector)
 
-    # Get camera stream
+    # Initialize OpenCV VideoCapture
     print("Getting your camera stream. This may take a second...")
     cap = cv2.VideoCapture(0)
+    if not cap.isOpened():
+        print("Error: Could not access the camera.")
+        sys.exit(1)
 
-    # Initialize screen projection
-    icon_path = "../files/icon.png"
+    # Initialize the Qt application and setup UI components
     app = QtWidgets.QApplication([])
-    app.setWindowIcon(QtGui.QIcon(icon_path))
+    icon_path = "../files/icon.png"
+    if not QtGui.QIcon(icon_path).isNull():
+        app.setWindowIcon(QtGui.QIcon(icon_path))
+    else:
+        print(f"Warning: Icon file not found at {icon_path}")
 
-    blur_windows = []
-    for screen in app.screens():
-        blur_window = BlurWindow(screen)
-        blur_window.setGeometry(screen.geometry())  # Set the geometry to the screen's geometry
-        blur_window.showFullScreen()  # Show the window in full screen mode
-        blur_windows.append(blur_window)
+    # Create blur windows for all screens
+    blur_windows = [
+        BlurWindow(screen) for screen in app.screens()
+    ]
+    for blur_window in blur_windows:
+        blur_window.setGeometry(blur_window.screen().geometry())
+        blur_window.hide()  # Initially hidden
 
+    # Function to stop the camera and quit the application
     def stop_camera():
-        cap.release()
+        if cap.isOpened():
+            cap.release()
         app.quit()
-        sys.exit() 
+        sys.exit()
 
+    # Create the control window
     control_window = ControlWindow(blur_windows, icon_path=icon_path)
     control_window.closeEvent = lambda event: stop_camera()
-    blink_detector.module.blink_detected.connect(lambda: reset_all_windows(blur_windows))
 
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            break
+    # Connect the blink detector signal to reset blur windows
+    try:
+        blink_detector.module.blink_detected.connect(lambda: reset_all_windows(blur_windows))
+    except AttributeError as e:
+        print(f"Blink detector signal connection failed: {e}")
 
-        is_blink = blink_detector(frame)
+    # Function to process frames from the camera
+    def process_frames():
+        if cap.isOpened():
+            ret, frame = cap.read()
+            if not ret:
+                print("Error: Failed to read from the camera.")
+                stop_camera()
 
-        if cfg.verbose:
-            print(is_blink)
+            is_blink = blink_detector(frame)
+            if cfg.verbose:
+                print(f"Blink detected: {is_blink}")
 
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+    # Timer to periodically process frames (non-blocking GUI)
+    timer = QtCore.QTimer()
+    timer.timeout.connect(process_frames)
+    timer.start(16)  # Approximately 60 FPS
 
+    # Run the application
+    control_window.show()
     app.exec_()
-    cap.release()
+
+    # Release camera on exit
+    if cap.isOpened():
+        cap.release()
 
 
 if __name__ == "__main__":
-    main() 
+    main()
