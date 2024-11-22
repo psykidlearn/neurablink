@@ -5,6 +5,7 @@ class ControlWindow(QtWidgets.QWidget):
         super().__init__()
         self.blur_windows = blur_windows
         self.initUI(icon_path)
+        self.setStyle(QtWidgets.QStyleFactory.create('Fusion'))
 
     def initUI(self, icon_path:str):
         self.setWindowTitle('Neurablink - Control Panel')
@@ -211,10 +212,11 @@ class BlurWindow(QtWidgets.QWidget):
         else:
             self.timer.stop()
 
-def reset_all_windows(blur_windows):  
-    for window in blur_windows:
-        # Use invokeMethod to ensure the method is called in the correct thread
-        QtCore.QMetaObject.invokeMethod(window, "reset_opacity", QtCore.Qt.QueuedConnection)
+def reset_all_windows(blur_windows, control_window=None):  
+    if control_window.start_button.isEnabled():
+        for window in blur_windows:
+            # Use invokeMethod to ensure the method is called in the correct thread
+            QtCore.QMetaObject.invokeMethod(window, "reset_opacity", QtCore.Qt.QueuedConnection)
 
 def main():
     app = QtWidgets.QApplication([])
@@ -227,13 +229,7 @@ def main():
         blur_windows.append(blur_window)
 
     control_window = ControlWindow(blur_windows)
-    #Get camera stream with eye segmentation
-    # cap = cv2.VideoCapture(0)
-    # eye_detector = FaceMeshLandmarksDetector()
-    # blink_detector = VerticalDistanceBlinkDetector(eye_detector)
-    # blink_detector.blink_detected.connect(lambda: reset_all_windows(blur_windows))
-
-    keyboard.add_hotkey('space', reset_all_windows, args=(blur_windows,))
+    #keyboard.add_hotkey('space', reset_all_windows, args=(blur_windows,))
     app.exec_()
 
 if __name__ == "__main__":
