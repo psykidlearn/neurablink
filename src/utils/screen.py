@@ -158,7 +158,7 @@ class ControlWindow(QtWidgets.QWidget):
 class BlurWindow(QtWidgets.QWidget):
     def __init__(self, screen):
         super().__init__()
-        self.setWindowFlags(QtCore.Qt.FramelessWindowHint | QtCore.Qt.WindowStaysOnTopHint)
+        self.setWindowFlags(QtCore.Qt.FramelessWindowHint | QtCore.Qt.WindowStaysOnTopHint | QtCore.Qt.ToolTip)
         self.setWindowFlags(self.windowFlags() | QtCore.Qt.WindowTransparentForInput)
         self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
         self.setAttribute(QtCore.Qt.WA_TransparentForMouseEvents, True)
