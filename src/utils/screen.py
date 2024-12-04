@@ -1,4 +1,4 @@
-from PyQt5 import QtWidgets, QtGui, QtCore
+from PyQt6 import QtWidgets, QtGui, QtCore
 
 class ControlWindow(QtWidgets.QWidget):
     def __init__(self, blur_windows, icon_path:str):
@@ -22,7 +22,7 @@ class ControlWindow(QtWidgets.QWidget):
 
         # Title label
         self.title_label = QtWidgets.QLabel('Neurablink - Blink Detector')
-        self.title_label.setAlignment(QtCore.Qt.AlignCenter)
+        self.title_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.title_label.setStyleSheet("font-size: 18px; font-weight: bold; color: #2E86C1;")
         self.layout.addWidget(self.title_label)
 
@@ -31,7 +31,7 @@ class ControlWindow(QtWidgets.QWidget):
             'Press "Start" to begin the blink detection tracking.\n'
             'Press "Stop" to halt the process and clear the screen.'
         )
-        self.description_label.setAlignment(QtCore.Qt.AlignCenter)
+        self.description_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.description_label.setStyleSheet("font-size: 14px; color: #5D6D7E;")
         self.layout.addWidget(self.description_label)
 
@@ -41,7 +41,7 @@ class ControlWindow(QtWidgets.QWidget):
 
         # Start button
         self.start_button = QtWidgets.QPushButton('Start')
-        self.start_button.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.start_button.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
         self.start_button.setMinimumSize(100, 40)
         self.start_button.setStyleSheet("""
             QPushButton {
@@ -60,7 +60,7 @@ class ControlWindow(QtWidgets.QWidget):
 
         # Stop button
         self.stop_button = QtWidgets.QPushButton('Stop')
-        self.stop_button.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.stop_button.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
         self.stop_button.setMinimumSize(100, 40)
         self.stop_button.setStyleSheet("""
             QPushButton {
@@ -124,7 +124,7 @@ class ControlWindow(QtWidgets.QWidget):
         """)
 
     def keyPressEvent(self, event):
-        if event.key() in (QtCore.Qt.Key_Return, QtCore.Qt.Key_Enter, QtCore.Qt.Key_Space):
+        if event.key() in (QtCore.Qt.Key.Key_Return, QtCore.Qt.Key.Key_Enter, QtCore.Qt.Key.Key_Space):
             event.ignore()  # Ignore the Enter and Space key presses
         else:
             super().keyPressEvent(event)
@@ -158,10 +158,10 @@ class ControlWindow(QtWidgets.QWidget):
 class BlurWindow(QtWidgets.QWidget):
     def __init__(self, screen):
         super().__init__()
-        self.setWindowFlags(QtCore.Qt.FramelessWindowHint | QtCore.Qt.WindowStaysOnTopHint | QtCore.Qt.ToolTip)
-        self.setWindowFlags(self.windowFlags() | QtCore.Qt.WindowTransparentForInput)
-        self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
-        self.setAttribute(QtCore.Qt.WA_TransparentForMouseEvents, True)
+        self.setWindowFlags(QtCore.Qt.WindowType.FramelessWindowHint | QtCore.Qt.WindowType.WindowStaysOnTopHint | QtCore.Qt.WindowType.ToolTip)
+        self.setWindowFlags(self.windowFlags() | QtCore.Qt.WindowType.WindowTransparentForInput)
+        self.setAttribute(QtCore.Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.setAttribute(QtCore.Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
 
         # Get screen size
         self.setGeometry(screen.geometry())
@@ -201,7 +201,7 @@ class BlurWindow(QtWidgets.QWidget):
 
     def paintEvent(self, event):
         painter = QtGui.QPainter(self)
-        painter.setRenderHint(QtGui.QPainter.Antialiasing)
+        painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
         painter.fillRect(self.rect(), QtGui.QColor(0, 0, 0, self.opacity_level))
         painter.end()
     
@@ -215,7 +215,7 @@ class BlurWindow(QtWidgets.QWidget):
 def reset_all_windows(blur_windows):  
     for window in blur_windows:
         # Use invokeMethod to ensure the method is called in the correct thread
-        QtCore.QMetaObject.invokeMethod(window, "reset_opacity", QtCore.Qt.QueuedConnection)
+        QtCore.QMetaObject.invokeMethod(window, "reset_opacity", QtCore.Qt.ConnectionType.QueuedConnection)
 
 # def reset_all_windows(blur_windows, control_window=None):  
 #     if control_window.start_button.isEnabled():
@@ -235,7 +235,7 @@ def main():
 
     control_window = ControlWindow(blur_windows)
     #keyboard.add_hotkey('space', reset_all_windows, args=(blur_windows,))
-    app.exec_()
+    app.exec()
 
 if __name__ == "__main__":
     main() 

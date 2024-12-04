@@ -1,7 +1,7 @@
 import cv2
 import hydra
 from omegaconf import DictConfig
-from PyQt5 import QtWidgets, QtGui, QtCore
+from PyQt6 import QtWidgets, QtGui, QtCore
 from utils.screen import ControlWindow, BlurWindow, reset_all_windows
 import sys
 
@@ -70,7 +70,7 @@ def main(cfg: DictConfig):
 
     # Run the application
     control_window.show()
-    app.exec_()
+    app.exec()
 
     # Release camera on exit
     if cap.isOpened():
