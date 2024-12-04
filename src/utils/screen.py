@@ -138,7 +138,7 @@ class ControlWindow(QtWidgets.QWidget):
         # Disable the start button, change its appearance, and update its text
         self.start_button.setEnabled(False)
         self.start_button.setText("Detecting your Blinks...")
-        self.start_button.setStyleSheet("background-color: #A9A9A9; color: white; font-size: 14px;")
+        self.start_button.setStyleSheet("background-color: #A9A9A9; color: grey; font-size: 14px;")
 
     def stop_application(self):
         for window in self.blur_windows:
@@ -147,13 +147,24 @@ class ControlWindow(QtWidgets.QWidget):
         # Re-enable the start button, restore its original appearance, and update its text
         self.start_button.setEnabled(True)
         self.start_button.setText("Start")
-        self.start_button.setStyleSheet("background-color: #28B463; color: white; font-size: 14px;")
+        self.start_button.setStyleSheet("""
+            QPushButton {
+                background-color: #28B463; 
+                color: white; 
+                font-size: 14px; 
+                border-radius: 10px;
+                padding: 10px;
+            }
+            QPushButton:hover {
+                background-color: #239B56;
+            }
+        """)
 
     def closeEvent(self, event):
         #Closing control window will stop the application
         self.stop_application()  
         event.accept()  
-
+    
 
 class BlurWindow(QtWidgets.QWidget):
     def __init__(self, screen):
