@@ -58,10 +58,24 @@ def main(cfg: DictConfig):
             if not ret:
                 print("Error: Failed to read from the camera.")
                 stop_camera()
+                return
 
+            eye_mask = blink_detector.module.eye_detector.create_eye_mask(frame)
+            frame[eye_mask] = (0, 255, 0)  # Color the eyes area for visualization
+
+            #Detect blink
             is_blink = blink_detector(frame)
-            if cfg.verbose:
-                print(f"Blink detected: {is_blink}")
+
+            # If blink detected, make the eyes area red
+            if is_blink:
+                frame[eye_mask] = (0, 0, 255)
+
+            # Convert BGR to RGB for Qt display
+            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) 
+            
+            # Update the camera feed in the control window
+            control_window.update_camera_feed(rgb_frame)
+
 
     # Timer to periodically process frames (non-blocking GUI)
     timer = QtCore.QTimer()

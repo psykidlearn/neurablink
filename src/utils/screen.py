@@ -1,12 +1,36 @@
 from PyQt6 import QtWidgets, QtGui, QtCore
+import cv2
 
 class ControlWindow(QtWidgets.QWidget):
     def __init__(self, blur_windows, icon_path:str):
         super().__init__()
         self.blur_windows = blur_windows
+        self.available_cameras = self.get_available_cameras()
         self.initUI(icon_path)
         self.setStyle(QtWidgets.QStyleFactory.create('Fusion'))
+        self.is_running = False  # track application state
 
+    def get_available_cameras(self):
+        """Get a list of available cameras"""
+        available_cameras = []
+        # If you have more than 5 cameras, what the hell is wrong with you?
+        for index in range(5):  
+            try:
+                cap = cv2.VideoCapture(index, cv2.CAP_DSHOW)  # Specify backend
+                if cap.isOpened():
+                    ret, _ = cap.read()
+                    if ret:
+                        available_cameras.append(f"Camera {index}")
+                    cap.release()
+            except:
+                continue
+        
+        # If no cameras found, add "No camera found" option
+        if not available_cameras:
+            available_cameras.append("No camera found")
+        
+        return available_cameras
+    
     def initUI(self, icon_path:str):
         self.setWindowTitle('Neurablink - Control Panel')
         self.setGeometry(100, 100, 400, 300)  # Slightly larger default size
@@ -25,6 +49,33 @@ class ControlWindow(QtWidgets.QWidget):
         self.title_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.title_label.setStyleSheet("font-size: 18px; font-weight: bold; color: #2E86C1;")
         self.layout.addWidget(self.title_label)
+
+
+        camera_selection_layout = QtWidgets.QHBoxLayout()
+        camera_label = QtWidgets.QLabel("Select Camera:")
+        camera_label.setStyleSheet("font-size: 14px; color: #2E86C1;")
+        camera_selection_layout.addWidget(camera_label)
+        self.camera_combo = QtWidgets.QComboBox()
+        self.camera_combo.addItems(self.available_cameras)
+        self.camera_combo.setStyleSheet("""
+            QComboBox {
+                font-size: 14px;
+                padding: 5px;
+                border: 1px solid #BDC3C7;
+                border-radius: 5px;
+                min-width: 150px;
+            }
+        """)
+        camera_selection_layout.addWidget(self.camera_combo)
+        self.layout.addLayout(camera_selection_layout)
+
+
+
+        # Add camera live feed
+        self.camera_label = QtWidgets.QLabel()
+        self.camera_label.setMinimumSize(320, 240)  # Adjust size as needed
+        self.camera_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        self.layout.addWidget(self.camera_label)
 
         # Description label
         self.description_label = QtWidgets.QLabel(
@@ -94,6 +145,7 @@ class ControlWindow(QtWidgets.QWidget):
         title_font_size = max(14, width // 20)
         description_font_size = max(12, width // 30)
         button_font_size = max(12, width // 25)
+        camera_font_size = max(12, width // 30) 
 
         # Update styles
         self.title_label.setStyleSheet(f"font-size: {title_font_size}px; font-weight: bold; color: #2E86C1;")
@@ -122,6 +174,19 @@ class ControlWindow(QtWidgets.QWidget):
                 background-color: #B03A2E;
             }}
         """)
+        for widget in self.findChildren(QtWidgets.QLabel):
+            if widget.text() == "Select Camera:":
+                widget.setStyleSheet(f"font-size: {camera_font_size}px; color: #2E86C1;")
+        
+        self.camera_combo.setStyleSheet(f"""
+            QComboBox {{
+                font-size: {camera_font_size}px;
+                padding: 5px;
+                border: 1px solid #BDC3C7;
+                border-radius: 5px;
+                min-width: {width // 3}px;
+            }}
+        """)
 
     def keyPressEvent(self, event):
         if event.key() in (QtCore.Qt.Key.Key_Return, QtCore.Qt.Key.Key_Enter, QtCore.Qt.Key.Key_Space):
@@ -130,21 +195,25 @@ class ControlWindow(QtWidgets.QWidget):
             super().keyPressEvent(event)
 
     def start_application(self):
+        self.is_running = True # update application state
         reset_all_windows(self.blur_windows)  # Reset all windows before starting
         for window in self.blur_windows:
             window.showFullScreen()
             window.start_opacity()  # Start the blurring process
 
-        # Disable the start button, change its appearance, and update its text
+        # Disable the start button and camera switching, change button appearance, and update its text
+        self.camera_combo.setEnabled(False)  
         self.start_button.setEnabled(False)
         self.start_button.setText("Detecting your Blinks...")
         self.start_button.setStyleSheet("background-color: #A9A9A9; color: grey; font-size: 14px;")
 
     def stop_application(self):
+        self.is_running = False # update application state
         for window in self.blur_windows:
             window.hide()
 
         # Re-enable the start button, restore its original appearance, and update its text
+        self.camera_combo.setEnabled(True)
         self.start_button.setEnabled(True)
         self.start_button.setText("Start")
         self.start_button.setStyleSheet("""
@@ -164,6 +233,16 @@ class ControlWindow(QtWidgets.QWidget):
         #Closing control window will stop the application
         self.stop_application()  
         event.accept()  
+    
+    def update_camera_feed(self, frame):
+        # Convert frame to QImage
+        height, width, channel = frame.shape
+        bytes_per_line = 3 * width
+        q_image = QtGui.QImage(frame.data, width, height, bytes_per_line, QtGui.QImage.Format.Format_RGB888)
+        # Convert to QPixmap and scale to fit the label
+        pixmap = QtGui.QPixmap.fromImage(q_image)
+        scaled_pixmap = pixmap.scaled(self.camera_label.size(), QtCore.Qt.AspectRatioMode.KeepAspectRatio)
+        self.camera_label.setPixmap(scaled_pixmap)
     
 
 class BlurWindow(QtWidgets.QWidget):
