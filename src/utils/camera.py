@@ -4,6 +4,9 @@ import sys
 
 
 class CameraManager:
+    """
+    Manage camera operations, like stopping and changing cameras.
+    """
     def __init__(self, cap: cv2.VideoCapture, app: QtWidgets.QApplication) -> None:
         self.cap = cap
         self.app = app
@@ -25,6 +28,9 @@ class CameraManager:
 
 
 class CameraFeed(QtWidgets.QLabel):
+    """
+    Widget to display the camera feed in the application.
+    """
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setMinimumSize(320, 240)  # Adjust size as needed

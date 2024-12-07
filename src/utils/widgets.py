@@ -138,6 +138,9 @@ class BlinkTimerWidget(QtWidgets.QWidget):
 
 
 class DetectionSensitivityWidget(QtWidgets.QWidget):
+    """
+    Widget for setting the detection sensitivity.
+    """
     def __init__(self, initial_quantile_index:int=4, parent=None, common_min_width:int=200, connect_func:callable=None):
         super().__init__(parent)
         self.layout = QtWidgets.QHBoxLayout()
@@ -206,6 +209,9 @@ class DetectionSensitivityWidget(QtWidgets.QWidget):
 
 
 class ButtonLayout(QtWidgets.QHBoxLayout):
+    """
+    Layout for the start and stop buttons.
+    """
     def __init__(self, start_callback, stop_callback):
         super().__init__()
         self.setSpacing(10)
