@@ -4,6 +4,7 @@ from omegaconf import DictConfig
 from PyQt6 import QtWidgets, QtGui, QtCore
 from utils.screen import ControlWindow, BlurWindow, reset_all_windows
 import sys
+import numpy as np
 
 
 @hydra.main(version_base=None, config_path="../configs", config_name="main")
@@ -60,7 +61,6 @@ def main(cfg: DictConfig):
     except AttributeError as e:
         print(f"Blink detector signal connection failed: {e}")
 
-    import numpy as np
     # Function to process frames from the camera
     def process_frames():
         if cap.isOpened():
