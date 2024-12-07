@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import mediapipe as mp
+import pickle
 from PyQt5.QtCore import QObject, pyqtSignal
 
 
@@ -23,6 +24,8 @@ class FaceMeshLandmarksDetector(BaseEyeLandmarksDetector):
             static_image_mode=False, max_num_faces=1, refine_landmarks=True
             )
         self.mask_size = mask_size
+        with open('./assets/default_landmarks.pkl', "rb") as f:
+            self.face_landmarks = pickle.load(f)
 
     def get_eye_landmarks(self, frame):
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
