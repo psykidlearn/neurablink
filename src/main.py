@@ -4,6 +4,7 @@ from omegaconf import DictConfig
 from PyQt6 import QtWidgets, QtGui, QtCore
 from utils.screen import ControlWindow, BlurWindow, reset_all_windows
 import sys
+import numpy as np
 
 
 @hydra.main(version_base=None, config_path="../configs", config_name="main")
@@ -40,8 +41,21 @@ def main(cfg: DictConfig):
         app.quit()
         sys.exit()
 
+    def change_camera(camera_index):
+        """Change the camera feed to the selected camera."""
+        if cap.isOpened():
+            cap.release()
+        cap.open(camera_index)
+        if not cap.isOpened():
+            print(f"Error: Could not access camera {camera_index}.")
+            stop_camera()
+
     # Create the control window
-    control_window = ControlWindow(blur_windows, icon_path=cfg.icon_path)
+    control_window = ControlWindow(
+        blur_windows=blur_windows,
+        icon_path=cfg.icon_path,
+        change_camera_func=change_camera
+        )
     control_window.closeEvent = lambda event: stop_camera()
 
     # Connect the blink detector signal to reset blur windows
@@ -60,7 +74,9 @@ def main(cfg: DictConfig):
                 return
 
             eye_mask = blink_detector.module.eye_detector.create_eye_mask(frame)
-            frame[eye_mask] = (0, 255, 0)  # Color the eyes area for visualization
+            shiny_intensity = 100  # Adjust this value for more or less shine
+            frame[eye_mask, 1] = np.clip(frame[eye_mask, 0] + shiny_intensity, 0, 255) # Increase green
+            #frame[eye_mask] = (0, 255, 0)  # Color the eyes area for visualization
 
             #Detect blink
             is_blink = blink_detector(frame)
