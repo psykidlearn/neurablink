@@ -9,9 +9,17 @@ blink_detector:
     calibrator:
       _target_: utils.detector.PeriodicCalibrator
       every_nth_frame: 1000
-      buffer_size: 100
-      quantile: 0.98
+      buffer_size: 200
+      quantile: 0.975
   buffer_size: 3
+
+camera_manager:
+  _target_: utils.camera.CameraManager
+
+frame_processor:
+  _target_: utils.frame_processor.FrameProcessor
+  highlight_intensity: 100
+
 verbose: false
 icon_path: ./assets/icon.png
 
