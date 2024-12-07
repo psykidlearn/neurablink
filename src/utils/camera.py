@@ -1,6 +1,7 @@
+from PyQt6 import QtWidgets, QtGui, QtCore
 import cv2
 import sys
-from PyQt6 import QtWidgets
+
 
 class CameraManager:
     def __init__(self, cap: cv2.VideoCapture, app: QtWidgets.QApplication) -> None:
@@ -21,3 +22,20 @@ class CameraManager:
         if not self.cap.isOpened():
             print(f"Error: Could not access camera {camera_index}.")
             self.stop()
+
+
+class CameraFeed(QtWidgets.QLabel):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setMinimumSize(320, 240)  # Adjust size as needed
+        self.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+
+    def update_camera_feed(self, frame):
+        # Convert frame to QImage
+        height, width, channel = frame.shape
+        bytes_per_line = 3 * width
+        q_image = QtGui.QImage(frame.data, width, height, bytes_per_line, QtGui.QImage.Format.Format_RGB888)
+        # Convert to QPixmap and scale to fit the label
+        pixmap = QtGui.QPixmap.fromImage(q_image)
+        scaled_pixmap = pixmap.scaled(self.size(), QtCore.Qt.AspectRatioMode.KeepAspectRatio)
+        self.setPixmap(scaled_pixmap)

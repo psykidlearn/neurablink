@@ -1,6 +1,6 @@
 from PyQt6 import QtWidgets, QtGui, QtCore
-import cv2
 from .widgets import CameraSelectionWidget, BlinkTimerWidget, DetectionSensitivityWidget, ButtonLayout   
+from .camera import CameraFeed
 
 
 class ControlWindow(QtWidgets.QWidget):
@@ -62,10 +62,8 @@ class ControlWindow(QtWidgets.QWidget):
         self.layout.addWidget(self.detection_sensitivity_widget)
 
         # Add camera live feed
-        self.camera_label = QtWidgets.QLabel()
-        self.camera_label.setMinimumSize(320, 240)  # Adjust size as needed
-        self.camera_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
-        self.layout.addWidget(self.camera_label)
+        self.camera_feed = CameraFeed(parent=None)
+        self.layout.addWidget(self.camera_feed)
 
         # Description label
         self.description_label = QtWidgets.QLabel(
@@ -146,15 +144,8 @@ class ControlWindow(QtWidgets.QWidget):
         self.change_camera_func(index)
 
     def update_camera_feed(self, frame):
-        # Convert frame to QImage
-        height, width, channel = frame.shape
-        bytes_per_line = 3 * width
-        q_image = QtGui.QImage(frame.data, width, height, bytes_per_line, QtGui.QImage.Format.Format_RGB888)
-        # Convert to QPixmap and scale to fit the label
-        pixmap = QtGui.QPixmap.fromImage(q_image)
-        scaled_pixmap = pixmap.scaled(self.camera_label.size(), QtCore.Qt.AspectRatioMode.KeepAspectRatio)
-        self.camera_label.setPixmap(scaled_pixmap)
-    
+        self.camera_feed.update_camera_feed(frame)
+
     def update_initial_delay(self, value):
         self.initial_delay_seconds = value
         for window in self.blur_windows:
@@ -190,9 +181,6 @@ class BlurWindow(QtWidgets.QWidget):
         self.initial_delay_timer = QtCore.QTimer()
         self.initial_delay_timer.timeout.connect(self.start_opacity_increase)
         self.initial_delay_seconds = 5  # Delay in seconds before opacity starts increasing
-
-        # Start the initial delay timer
-        #self.initial_delay_timer.start(self.initial_delay_seconds * 1000)
 
     def start_opacity(self):
         #Called by control window to start the application
