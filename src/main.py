@@ -3,6 +3,8 @@ import hydra
 from omegaconf import DictConfig
 from PyQt6 import QtWidgets, QtGui, QtCore
 from utils.screen import ControlWindow, BlurWindow, reset_all_windows
+from utils.frame_processor import FrameProcessor
+from utils.camera import CameraManager
 import sys
 import numpy as np
 
@@ -34,70 +36,39 @@ def main(cfg: DictConfig):
         blur_window.setGeometry(blur_window.screen().geometry())
         blur_window.hide()  # Initially hidden
 
-    # Function to stop the camera and quit the application
-    def stop_camera():
-        if cap.isOpened():
-            cap.release()
-        app.quit()
-        sys.exit()
-
-    def change_camera(camera_index):
-        """Change the camera feed to the selected camera."""
-        if cap.isOpened():
-            cap.release()
-        cap.open(camera_index)
-        if not cap.isOpened():
-            print(f"Error: Could not access camera {camera_index}.")
-            stop_camera()
-
-    # Create the control window
-    control_window = ControlWindow(
-        blur_windows=blur_windows,
-        icon_path=cfg.icon_path,
-        change_camera_func=change_camera
-        )
-    control_window.closeEvent = lambda event: stop_camera()
-
     # Connect the blink detector signal to reset blur windows
     try:
         blink_detector.module.blink_detected.connect(lambda: reset_all_windows(blur_windows))
     except AttributeError as e:
         print(f"Blink detector signal connection failed: {e}")
 
-    # Function to process frames from the camera
-    def process_frames():
-        if cap.isOpened():
-            ret, frame = cap.read()
-            if not ret:
-                print("Error: Failed to read from the camera.")
-                stop_camera()
-                return
+    # Create the camera manager
+    camera_manager = hydra.utils.instantiate(cfg.camera_manager, cap=cap, app=app)
 
-            eye_mask = blink_detector.module.eye_detector.create_eye_mask(frame)
-            shiny_intensity = 100  # Adjust this value for more or less shine
-            frame[eye_mask, 1] = np.clip(frame[eye_mask, 0] + shiny_intensity, 0, 255) # Increase green
-            #frame[eye_mask] = (0, 255, 0)  # Color the eyes area for visualization
+    # Create the control window
+    control_window = ControlWindow(
+        blur_windows=blur_windows,
+        icon_path=cfg.icon_path,
+        change_camera_func=camera_manager.change
+        )
+    control_window.closeEvent = lambda event: camera_manager.stop()
 
-            #Detect blink
-            is_blink = blink_detector(frame)
-
-            # If blink detected, make the eyes area red
-            if is_blink:
-                frame[eye_mask] = (0, 0, 255)
-
-            # Convert BGR to RGB for Qt display
-            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) 
-            
-            # Update the camera feed in the control window
-            control_window.update_camera_feed(rgb_frame)
-
+    # Instantiate the frame processor
+    frame_processor = hydra.utils.instantiate(
+        cfg.frame_processor,
+        blink_detector=blink_detector,
+        cap=cap,
+        app=app,
+        control_window=control_window,
+        camera_manager=camera_manager
+    )
 
     # Timer to periodically process frames (non-blocking GUI)
     timer = QtCore.QTimer()
-    timer.timeout.connect(process_frames)
+    timer.timeout.connect(frame_processor.process_frames)
     timer.start(16)  # Approximately 60 FPS
 
-    # Run the application
+    # Run application
     control_window.show()
     app.exec()
 
