@@ -7,8 +7,7 @@ blink_detector:
       mask_size: 16
       default_landmarks_path: ./assets/default_landmarks.pkl
     calibrator:
-      _target_: utils.detector.PeriodicCalibrator
-      every_nth_frame: 1000
+      _target_: utils.detector.ContinuousCalibrator
       buffer_size: 200
       quantile: 0.975
   buffer_size: 3

@@ -92,11 +92,10 @@ class BaseCalibrator:
     def reset(self) -> None:
         raise NotImplementedError
 
-    def set_threshold(self, changes: np.ndarray) -> None:
-        if not self.threshold:
-            self.threshold = np.quantile(
-                np.stack(self.buffer, axis=0).ravel(), self.quantile
-            )
+    def set_threshold(self) -> None:
+        self.threshold = np.quantile(
+            np.stack(self.buffer, axis=0).ravel(), self.quantile
+        )
 
     def __call__(self, changes: np.ndarray) -> float:
         raise NotImplementedError
@@ -115,10 +114,11 @@ class OneTimeCalibrator(BaseCalibrator):
 
     def __call__(self, changes: np.ndarray) -> float:
         if len(self.buffer) == self.buffer_size:
-            self.set_threshold(changes)
+            if not self.threshold:
+                self.set_threshold()
             return self.threshold
         self.buffer.append(changes)
-        return np.inf
+        return -np.inf
 
 
 class PeriodicCalibrator(BaseCalibrator):
@@ -135,15 +135,37 @@ class PeriodicCalibrator(BaseCalibrator):
         self.counter = 0
 
     def __call__(self, changes: np.ndarray) -> float:
+
+        self.counter += 1
         if self.counter == self.every_nth_frame:
             self.reset()
 
         if len(self.buffer) == self.buffer_size:
-            self.set_threshold(changes)
+            self.set_threshold()
             return self.threshold
 
         self.buffer.append(changes)
-        return np.inf
+        return -np.inf
+
+
+class ContinuousCalibrator(BaseCalibrator):
+
+    def __init__(self, buffer_size: int, quantile: float) -> None:
+        self.quantile = quantile
+        self.buffer_size = buffer_size
+        self.reset()
+
+    def reset(self) -> None:
+        self.buffer: List[np.ndarray] = []
+        self.threshold: Optional[float] = None
+
+    def __call__(self, changes: np.ndarray) -> float:
+        self.buffer.append(changes)
+        if len(self.buffer) == self.buffer_size:
+            self.set_threshold()
+            self.buffer.pop(0)
+            return self.threshold
+        return -np.inf
 
 
 class BufferedModule:
