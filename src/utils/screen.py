@@ -1,6 +1,6 @@
 from PyQt6 import QtWidgets, QtGui, QtCore
 import cv2
-from .widgets import CameraSelectionWidget, BlinkTimerWidget, DetectionSensitivityWidget    
+from .widgets import CameraSelectionWidget, BlinkTimerWidget, DetectionSensitivityWidget, ButtonLayout   
 
 
 class ControlWindow(QtWidgets.QWidget):
@@ -24,8 +24,8 @@ class ControlWindow(QtWidgets.QWidget):
 
         # Main layout
         self.layout = QtWidgets.QVBoxLayout()
-        self.layout.setContentsMargins(20, 20, 20, 20)  # Add margins
-        self.layout.setSpacing(15)  # Add spacing between widgets
+        self.layout.setContentsMargins(20, 20, 20, 20)  # margins
+        self.layout.setSpacing(15)  # spacing between widgets
 
         # Title label
         self.title_label = QtWidgets.QLabel('Neurablink - Blink Detector')
@@ -33,7 +33,7 @@ class ControlWindow(QtWidgets.QWidget):
         self.title_label.setStyleSheet("font-size: 18px; font-weight: bold; color: #2E86C1;")
         self.layout.addWidget(self.title_label)
 
-        # Define a common minimum width for widget alignment
+        # Define common minimum width for widget alignment
         common_min_width = 200
 
         # Camera selection layout   
@@ -49,7 +49,8 @@ class ControlWindow(QtWidgets.QWidget):
         self.blink_timer_widget = BlinkTimerWidget(
             initial_delay_seconds=5,
             parent=None,
-            common_min_width=common_min_width
+            common_min_width=common_min_width,
+            connect_func=self.update_initial_delay
             )
         self.layout.addWidget(self.blink_timer_widget)
 
@@ -57,7 +58,8 @@ class ControlWindow(QtWidgets.QWidget):
         self.detection_sensitivity_widget = DetectionSensitivityWidget(
             initial_quantile_index=4,
             parent=None,
-            common_min_width=common_min_width
+            common_min_width=common_min_width,
+            connect_func=self.update_quantile
             )
         self.layout.addWidget(self.detection_sensitivity_widget)
 
@@ -77,48 +79,12 @@ class ControlWindow(QtWidgets.QWidget):
         self.layout.addWidget(self.description_label)
 
         # Button layout
-        button_layout = QtWidgets.QHBoxLayout()
-        button_layout.setSpacing(10)
+        self.button_layout = ButtonLayout(
+            start_callback=self.start_application, 
+            stop_callback=self.stop_application
+            )
+        self.layout.addLayout(self.button_layout)
 
-        # Start button
-        self.start_button = QtWidgets.QPushButton('Start')
-        self.start_button.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
-        self.start_button.setMinimumSize(100, 40)
-        self.start_button.setStyleSheet("""
-            QPushButton {
-                background-color: #28B463; 
-                color: white; 
-                font-size: 14px; 
-                border-radius: 10px;
-                padding: 10px;
-            }
-            QPushButton:hover {
-                background-color: #239B56;
-            }
-        """)
-        self.start_button.clicked.connect(self.start_application)
-        button_layout.addWidget(self.start_button)
-
-        # Stop button
-        self.stop_button = QtWidgets.QPushButton('Stop')
-        self.stop_button.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
-        self.stop_button.setMinimumSize(100, 40)
-        self.stop_button.setStyleSheet("""
-            QPushButton {
-                background-color: #CB4335; 
-                color: white; 
-                font-size: 14px; 
-                border-radius: 10px;
-                padding: 10px;
-            }
-            QPushButton:hover {
-                background-color: #B03A2E;
-            }
-        """)
-        self.stop_button.clicked.connect(self.stop_application)
-        button_layout.addWidget(self.stop_button)
-
-        self.layout.addLayout(button_layout)
         self.setLayout(self.layout)
         self.update_styles()
         self.show()
@@ -129,43 +95,15 @@ class ControlWindow(QtWidgets.QWidget):
 
     def update_styles(self):
         width = self.width()
-        height = self.height()
 
         # Update font sizes based on window size
         title_font_size = max(14, width // 20)
         description_font_size = max(12, width // 30)
-        button_font_size = max(12, width // 25)
-        slider_font_size = max(12, width // 30)
-        
 
         # Update styles
         self.title_label.setStyleSheet(f"font-size: {title_font_size}px; font-weight: bold; color: #2E86C1;")
         self.description_label.setStyleSheet(f"font-size: {description_font_size}px; color: #5D6D7E;")
-        self.start_button.setStyleSheet(f"""
-            QPushButton {{
-                background-color: #28B463; 
-                color: white; 
-                font-size: {button_font_size}px; 
-                border-radius: 10px;
-                padding: 10px;
-            }}
-            QPushButton:hover {{
-                background-color: #239B56;
-            }}
-        """)
-        self.stop_button.setStyleSheet(f"""
-            QPushButton {{
-                background-color: #CB4335; 
-                color: white; 
-                font-size: {button_font_size}px; 
-                border-radius: 10px;
-                padding: 10px;
-            }}
-            QPushButton:hover {{
-                background-color: #B03A2E;
-            }}
-        """)
-
+        self.button_layout.update_styles(width)
         self.camera_selection_widget.update_styles(width)   
         self.blink_timer_widget.update_styles(width)
         self.detection_sensitivity_widget.update_styles(width)
@@ -187,11 +125,7 @@ class ControlWindow(QtWidgets.QWidget):
         self.camera_selection_widget.start()
         self.blink_timer_widget.start()
         self.detection_sensitivity_widget.start()
-        self.start_button.setEnabled(False)
-
-        # Change Start button appearance and update its text
-        self.start_button.setText("Detecting your Blinks...")
-        self.start_button.setStyleSheet("background-color: #A9A9A9; color: grey; font-size: 14px;")
+        self.button_layout.start()
 
     def stop_application(self):
         self.is_running = False # update application state
@@ -201,21 +135,8 @@ class ControlWindow(QtWidgets.QWidget):
         # Re-enable the start button, restore its original appearance, and update its text
         self.camera_selection_widget.stop()
         self.blink_timer_widget.stop()
-        self.detection_sensitivity_widget.start()
-        self.start_button.setEnabled(True)
-        self.start_button.setText("Start")
-        self.start_button.setStyleSheet("""
-            QPushButton {
-                background-color: #28B463; 
-                color: white; 
-                font-size: 14px; 
-                border-radius: 10px;
-                padding: 10px;
-            }
-            QPushButton:hover {
-                background-color: #239B56;
-            }
-        """)
+        self.detection_sensitivity_widget.stop()
+        self.button_layout.stop()   
 
     def closeEvent(self, event):
         #Closing control window will stop the application
@@ -325,16 +246,12 @@ class BlurWindow(QtWidgets.QWidget):
         else:
             self.timer.stop()
 
+
 def reset_all_windows(blur_windows):  
     for window in blur_windows:
         # Use invokeMethod to ensure the method is called in the correct thread
         QtCore.QMetaObject.invokeMethod(window, "reset_opacity", QtCore.Qt.ConnectionType.QueuedConnection)
 
-# def reset_all_windows(blur_windows, control_window=None):  
-#     if control_window.start_button.isEnabled():
-#         for window in blur_windows:
-#             # Use invokeMethod to ensure the method is called in the correct thread
-#             QtCore.QMetaObject.invokeMethod(window, "reset_opacity", QtCore.Qt.QueuedConnection)
 
 def main():
     app = QtWidgets.QApplication([])
@@ -347,7 +264,7 @@ def main():
         blur_windows.append(blur_window)
 
     control_window = ControlWindow(blur_windows)
-    #keyboard.add_hotkey('space', reset_all_windows, args=(blur_windows,))
+    #keyboard.add_hotkey('space', reset_all_windows, args=(blur_windows,)) # Debugging
     app.exec()
 
 if __name__ == "__main__":

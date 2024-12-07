@@ -48,7 +48,7 @@ class BlinkTimerWidget(QtWidgets.QWidget):
     """
     Widget for setting the blink timer.
     """
-    def __init__(self, initial_delay_seconds:int=5, parent=None, common_min_width:int=200):
+    def __init__(self, initial_delay_seconds:int=5, parent=None, common_min_width:int=200, connect_func:callable=None):
         super().__init__(parent)
         self.layout = QtWidgets.QHBoxLayout()
         self.delay_label = QtWidgets.QLabel("Blink Timer (seconds):")
@@ -81,9 +81,7 @@ class BlinkTimerWidget(QtWidgets.QWidget):
         self.layout.addWidget(self.delay_spin_box, 3)
         self.delay_value_label = QtWidgets.QLabel(f"{initial_delay_seconds}")
         self.delay_value_label.setStyleSheet("font-size: 14px; min-width: 30px;")
-        self.delay_spin_box.valueChanged.connect(
-            lambda value: self.delay_value_label.setText(f"{value}")
-        )
+        self.delay_spin_box.valueChanged.connect(connect_func)
         self.layout.addWidget(self.delay_value_label)
         self.setLayout(self.layout)
 
@@ -118,7 +116,7 @@ class BlinkTimerWidget(QtWidgets.QWidget):
 
 
 class DetectionSensitivityWidget(QtWidgets.QWidget):
-    def __init__(self, initial_quantile_index:int=4, parent=None, common_min_width:int=200):
+    def __init__(self, initial_quantile_index:int=4, parent=None, common_min_width:int=200, connect_func:callable=None):
         super().__init__(parent)
         self.layout = QtWidgets.QHBoxLayout()
         self.quantile_label = QtWidgets.QLabel("Detection Sensitivity: ")
@@ -151,9 +149,7 @@ class DetectionSensitivityWidget(QtWidgets.QWidget):
         self.layout.addWidget(self.quantile_slider, 3)
         self.quantile_value_label = QtWidgets.QLabel(str(initial_quantile_index))
         self.quantile_value_label.setStyleSheet("font-size: 14px; min-width: 30px;")
-        self.quantile_slider.valueChanged.connect(
-            lambda value: self.quantile_value_label.setText(str(value))
-        )
+        self.quantile_slider.valueChanged.connect(connect_func)
         self.layout.addWidget(self.quantile_value_label)
         self.setLayout(self.layout)
 
@@ -183,5 +179,97 @@ class DetectionSensitivityWidget(QtWidgets.QWidget):
                 width: 18px;
                 margin: -5px 0;
                 border-radius: 9px;
+            }}
+        """)
+
+
+class ButtonLayout(QtWidgets.QHBoxLayout):
+    def __init__(self, start_callback, stop_callback):
+        super().__init__()
+        self.setSpacing(10)
+
+        # Start button
+        self.start_button = QtWidgets.QPushButton('Start')
+        self.start_button.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
+        self.start_button.setMinimumSize(100, 40)
+        self.start_button.setStyleSheet("""
+            QPushButton {
+                background-color: #28B463; 
+                color: white; 
+                font-size: 14px; 
+                border-radius: 10px;
+                padding: 10px;
+            }
+            QPushButton:hover {
+                background-color: #239B56;
+            }
+        """)
+        self.start_button.clicked.connect(start_callback)
+        self.addWidget(self.start_button)
+
+        # Stop button
+        self.stop_button = QtWidgets.QPushButton('Stop')
+        self.stop_button.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
+        self.stop_button.setMinimumSize(100, 40)
+        self.stop_button.setStyleSheet("""
+            QPushButton {
+                background-color: #CB4335; 
+                color: white; 
+                font-size: 14px; 
+                border-radius: 10px;
+                padding: 10px;
+            }
+            QPushButton:hover {
+                background-color: #B03A2E;
+            }
+        """)
+        self.stop_button.clicked.connect(stop_callback)
+        self.addWidget(self.stop_button)
+
+    def start(self):
+        self.start_button.setEnabled(False)
+        self.start_button.setText("Detecting your Blinks...")
+        self.start_button.setStyleSheet("background-color: #A9A9A9; color: grey; font-size: 14px;")
+
+    def stop(self):
+        self.start_button.setEnabled(True)
+        self.start_button.setText("Start")
+        self.start_button.setStyleSheet("""
+            QPushButton {
+                background-color: #28B463; 
+                color: white; 
+                font-size: 14px; 
+                border-radius: 10px;
+                padding: 10px;
+            }
+            QPushButton:hover {
+                background-color: #239B56;
+            }
+        """)
+
+    def update_styles(self, width):
+        button_font_size = max(12, width // 25)
+        self.start_button.setStyleSheet(f"""
+            QPushButton {{
+                background-color: #28B463; 
+                color: white; 
+                font-size: {button_font_size}px; 
+                border-radius: 10px;
+                padding: 10px;
+            }}
+            QPushButton:hover {{
+                background-color: #239B56;
+            }}
+        """)
+        self.stop_button.setStyleSheet(f"""
+            QPushButton {{
+                background-color: #CB4335; 
+                color: white; 
+                font-size: {button_font_size}px; 
+                border-radius: 10px;
+                padding: 10px;
+            }}
+            QPushButton:hover {{
+                background-color: #B03A2E;
             }}
         """)
