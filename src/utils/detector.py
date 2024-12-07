@@ -18,13 +18,13 @@ class FaceMeshLandmarksDetector(BaseEyeLandmarksDetector):
     LEFT_EYE_LANDMARKS = [33, 160, 158, 133, 153, 144]
     RIGHT_EYE_LANDMARKS = [362, 385, 387, 263, 373, 380]
     
-    def __init__(self, mask_size=16):
+    def __init__(self, mask_size, default_landmarks_path):
         self.mp_face_mesh = mp.solutions.face_mesh
         self.face_mesh = self.mp_face_mesh.FaceMesh(
             static_image_mode=False, max_num_faces=1, refine_landmarks=True
             )
         self.mask_size = mask_size
-        with open('./assets/default_landmarks.pkl', "rb") as f:
+        with open(default_landmarks_path, "rb") as f:
             self.face_landmarks = pickle.load(f)
 
     def get_eye_landmarks(self, frame):
@@ -82,7 +82,7 @@ class FaceMeshLandmarksDetector(BaseEyeLandmarksDetector):
 
 class OneTimeCalibrator:
 
-    def __init__(self, buffer_size=500, quantile=0.95):
+    def __init__(self, buffer_size, quantile):
         self.quantile = quantile
         self.buffer_size = buffer_size
         self.buffer = []
@@ -101,7 +101,7 @@ class OneTimeCalibrator:
 
 class PeriodicCalibrator:
 
-    def __init__(self, every_nth_frame=3000, buffer_size=500, quantile=0.95):
+    def __init__(self, every_nth_frame, buffer_size, quantile):
         self.quantile = quantile
         self.buffer_size = buffer_size
         self.every_nth_frame = every_nth_frame

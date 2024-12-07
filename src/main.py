@@ -4,7 +4,7 @@ from omegaconf import DictConfig
 from PyQt6 import QtWidgets, QtGui, QtCore
 from utils.screen import ControlWindow, BlurWindow, reset_all_windows
 import sys
-
+import pathlib as plb
 
 @hydra.main(version_base=None, config_path="../configs", config_name="main")
 def main(cfg: DictConfig):
@@ -20,11 +20,10 @@ def main(cfg: DictConfig):
 
     # Initialize the Qt application and setup UI components
     app = QtWidgets.QApplication([])
-    icon_path = "../files/icon.png"
-    if not QtGui.QIcon(icon_path).isNull():
-        app.setWindowIcon(QtGui.QIcon(icon_path))
+    if not QtGui.QIcon(cfg.icon_path).isNull():
+        app.setWindowIcon(QtGui.QIcon(cfg.icon_path))
     else:
-        print(f"Warning: Icon file not found at {icon_path}")
+        print(f"Warning: Icon file not found at {cfg.icon_path}")
 
     # Create blur windows for all screens
     blur_windows = [
@@ -42,7 +41,7 @@ def main(cfg: DictConfig):
         sys.exit()
 
     # Create the control window
-    control_window = ControlWindow(blur_windows, icon_path=icon_path)
+    control_window = ControlWindow(blur_windows, icon_path=cfg.icon_path)
     control_window.closeEvent = lambda event: stop_camera()
 
     # Connect the blink detector signal to reset blur windows
