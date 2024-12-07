@@ -1,5 +1,7 @@
 from PyQt6 import QtWidgets, QtGui, QtCore
 import cv2
+from .widgets import CameraSelectionWidget, BlinkTimerWidget, DetectionSensitivityWidget    
+
 
 class ControlWindow(QtWidgets.QWidget):
     def __init__(self, blur_windows, icon_path:str, change_camera_func, blink_detector):
@@ -10,7 +12,6 @@ class ControlWindow(QtWidgets.QWidget):
         self.available_cameras = self.get_available_cameras()
         self.initUI(icon_path)
         self.setStyle(QtWidgets.QStyleFactory.create('Fusion'))
-        self.camera_combo.currentIndexChanged.connect(self.on_camera_selection_changed) # Connect camera selection change signal
         self.is_running = False  # track application state
 
     def initUI(self, icon_path:str):
@@ -33,107 +34,32 @@ class ControlWindow(QtWidgets.QWidget):
         self.layout.addWidget(self.title_label)
 
         # Define a common minimum width for widget alignment
-        common_min_width = 500
+        common_min_width = 200
 
-        # Camera selection layout
-        camera_selection_layout = QtWidgets.QHBoxLayout()
-        camera_label = QtWidgets.QLabel("Select Camera:")
-        camera_label.setStyleSheet("font-size: 16px; color: #2E86C1;")
-        camera_selection_layout.addWidget(camera_label, 3) # Stretch factor of 3
-        self.camera_combo = QtWidgets.QComboBox()
-        self.camera_combo.addItems(self.available_cameras)
-        self.camera_combo.setStyleSheet(f"""
-            QComboBox {{
-                font-size: 14px;
-                padding: 5px;
-                border: 1px solid #BDC3C7;
-                border-radius: 9px;
-                min-width: {common_min_width}px;
-            }}
-        """)
-        camera_selection_layout.addWidget(self.camera_combo)
-        self.layout.addLayout(camera_selection_layout)
+        # Camera selection layout   
+        self.camera_selection_widget = CameraSelectionWidget(
+            available_cameras=self.available_cameras, 
+            parent=None,
+            common_min_width=common_min_width
+            )
+        self.layout.addWidget(self.camera_selection_widget)
+        self.camera_selection_widget.camera_combo.currentIndexChanged.connect(self.on_camera_selection_changed) # Connect camera selection change signal
 
         # Blink Timer setting layout
-        self.initial_delay_seconds = 5 # Default blink timer
-        delay_layout = QtWidgets.QHBoxLayout()
-        delay_label = QtWidgets.QLabel("Blink Timer (seconds):")
-        delay_label.setStyleSheet("font-size: 16px; color: #2E86C1;")
-        delay_layout.addWidget(delay_label, 3) # Stretch factor of 3
-        self.delay_spin_box = QtWidgets.QSlider(QtCore.Qt.Orientation.Horizontal)
-        self.delay_spin_box.setRange(1, 15)  # Allow delay between 1 and 15 seconds
-        self.delay_spin_box.setValue(self.initial_delay_seconds)
-        self.delay_spin_box.setTickPosition(QtWidgets.QSlider.TickPosition.TicksBelow)
-        self.delay_spin_box.setTickInterval(1)
-        self.delay_spin_box.setStyleSheet(f"""
-            QSlider {{
-                min-width: {common_min_width}px;
-            }}
-            QSlider::groove:horizontal {{
-                border: 1px solid #BDC3C7;
-                height: 8px;
-                background: #F2F3F4;
-                margin: 2px 0;
-                border-radius: 4px;
-            }}
-            QSlider::handle:horizontal {{
-                background: #2E86C1;
-                border: 1px solid #BDC3C7;
-                width: 18px;
-                margin: -5px 0;
-                border-radius: 9px;
-            }}
-        """)
-        self.delay_spin_box.valueChanged.connect(self.update_initial_delay)
-        delay_layout.addWidget(self.delay_spin_box, 3) # Stretch factor of 3
-
-        self.delay_value_label = QtWidgets.QLabel(f"{self.initial_delay_seconds}")
-        self.delay_value_label.setStyleSheet("font-size: 14px; min-width: 30px;")
-        self.delay_spin_box.valueChanged.connect(
-            lambda value: self.delay_value_label.setText(f"{value}")
-        )
-        delay_layout.addWidget(self.delay_value_label)
-        self.layout.addLayout(delay_layout)
+        self.blink_timer_widget = BlinkTimerWidget(
+            initial_delay_seconds=5,
+            parent=None,
+            common_min_width=common_min_width
+            )
+        self.layout.addWidget(self.blink_timer_widget)
 
         # Quantile setting layout
-        self.initial_quantile_index = 4
-        quantile_layout = QtWidgets.QHBoxLayout()
-        quantile_label = QtWidgets.QLabel("Detection Sensitivity: ")
-        quantile_label.setStyleSheet("font-size: 16px; color: #2E86C1;")
-        quantile_layout.addWidget(quantile_label, 3) # Stretch factor of 3
-        self.quantile_slider = QtWidgets.QSlider(QtCore.Qt.Orientation.Horizontal)
-        self.quantile_slider.setRange(1, 5)  # Slider values from 1 to 5
-        self.quantile_slider.setValue(self.initial_quantile_index)  # Default to 0.975
-        self.quantile_slider.setTickPosition(QtWidgets.QSlider.TickPosition.TicksBelow)
-        self.quantile_slider.setTickInterval(1)
-        self.quantile_slider.setStyleSheet(f"""
-            QSlider {{
-                min-width: {common_min_width}px;
-            }}
-            QSlider::groove:horizontal {{
-                border: 1px solid #BDC3C7;
-                height: 8px;
-                background: #F2F3F4;
-                margin: 2px 0;
-                border-radius: 4px;
-            }}
-            QSlider::handle:horizontal {{
-                background: #2E86C1;
-                border: 1px solid #BDC3C7;
-                width: 18px;
-                margin: -5px 0;
-                border-radius: 9px;
-            }}
-        """)
-        self.quantile_slider.valueChanged.connect(self.update_quantile)
-        quantile_layout.addWidget(self.quantile_slider, 3) # Stretch factor of 3
-        self.quantile_value_label = QtWidgets.QLabel(str(self.initial_quantile_index))
-        self.quantile_value_label.setStyleSheet("font-size: 14px; min-width: 30px;")
-        self.quantile_slider.valueChanged.connect(
-            lambda value: self.quantile_value_label.setText(str(value))
-        )
-        quantile_layout.addWidget(self.quantile_value_label)
-        self.layout.addLayout(quantile_layout)
+        self.detection_sensitivity_widget = DetectionSensitivityWidget(
+            initial_quantile_index=4,
+            parent=None,
+            common_min_width=common_min_width
+            )
+        self.layout.addWidget(self.detection_sensitivity_widget)
 
         # Add camera live feed
         self.camera_label = QtWidgets.QLabel()
@@ -210,7 +136,7 @@ class ControlWindow(QtWidgets.QWidget):
         description_font_size = max(12, width // 30)
         button_font_size = max(12, width // 25)
         slider_font_size = max(12, width // 30)
-        camera_font_size = max(12, width // 30) 
+        
 
         # Update styles
         self.title_label.setStyleSheet(f"font-size: {title_font_size}px; font-weight: bold; color: #2E86C1;")
@@ -240,61 +166,9 @@ class ControlWindow(QtWidgets.QWidget):
             }}
         """)
 
-        # Camera selection label and combo box
-        self.camera_label.setStyleSheet(f"font-size: {camera_font_size}px; color: #2E86C1;")
-        self.camera_combo.setStyleSheet(f"""
-            QComboBox {{
-                font-size: {camera_font_size}px;
-                padding: 5px;
-                border: 1px solid #BDC3C7;
-                border-radius: 5px;
-                min-width: {width // 3}px;
-            }}
-        """)
-
-        # Blink timer slider
-        self.delay_value_label.setStyleSheet(f"font-size: {slider_font_size}px; min-width: 30px;")
-        self.delay_spin_box.setStyleSheet(f"""
-            QSlider {{
-                min-width: {width // 3}px;
-            }}
-            QSlider::groove:horizontal {{
-                border: 1px solid #BDC3C7;
-                height: 8px;
-                background: #F2F3F4;
-                margin: 2px 0;
-                border-radius: 4px;
-            }}
-            QSlider::handle:horizontal {{
-                background: #2E86C1;
-                border: 1px solid #BDC3C7;
-                width: 18px;
-                margin: -5px 0;
-                border-radius: 9px;
-            }}
-        """)
-
-        # Detection sensitivity slider
-        self.quantile_value_label.setStyleSheet(f"font-size: {slider_font_size}px; min-width: 30px;")
-        self.quantile_slider.setStyleSheet(f"""
-            QSlider {{
-                min-width: {width // 3}px;
-            }}
-            QSlider::groove:horizontal {{
-                border: 1px solid #BDC3C7;
-                height: 8px;
-                background: #F2F3F4;
-                margin: 2px 0;
-                border-radius: 4px;
-            }}
-            QSlider::handle:horizontal {{
-                background: #2E86C1;
-                border: 1px solid #BDC3C7;
-                width: 18px;
-                margin: -5px 0;
-                border-radius: 9px;
-            }}
-        """)
+        self.camera_selection_widget.update_styles(width)   
+        self.blink_timer_widget.update_styles(width)
+        self.detection_sensitivity_widget.update_styles(width)
 
     def keyPressEvent(self, event):
         if event.key() in (QtCore.Qt.Key.Key_Return, QtCore.Qt.Key.Key_Enter, QtCore.Qt.Key.Key_Space):
@@ -310,9 +184,9 @@ class ControlWindow(QtWidgets.QWidget):
             window.start_opacity()  # Start the blurring process
 
         # Disable Start button, camera switching, blink timer and detection sensitivity changes
-        self.camera_combo.setEnabled(False)  
-        self.delay_spin_box.setEnabled(False)
-        self.quantile_slider.setEnabled(False) 
+        self.camera_selection_widget.start()
+        self.blink_timer_widget.start()
+        self.detection_sensitivity_widget.start()
         self.start_button.setEnabled(False)
 
         # Change Start button appearance and update its text
@@ -325,9 +199,9 @@ class ControlWindow(QtWidgets.QWidget):
             window.hide()
 
         # Re-enable the start button, restore its original appearance, and update its text
-        self.camera_combo.setEnabled(True)
-        self.delay_spin_box.setEnabled(True)
-        self.quantile_slider.setEnabled(True)
+        self.camera_selection_widget.stop()
+        self.blink_timer_widget.stop()
+        self.detection_sensitivity_widget.start()
         self.start_button.setEnabled(True)
         self.start_button.setText("Start")
         self.start_button.setStyleSheet("""

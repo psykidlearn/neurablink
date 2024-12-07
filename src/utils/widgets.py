@@ -1,0 +1,187 @@
+from PyQt6 import QtWidgets, QtGui, QtCore
+
+class CameraSelectionWidget(QtWidgets.QWidget):
+    """
+    Widget for selecting the camera from a list of available cameras.
+    """
+    def __init__(self, available_cameras, parent=None, common_min_width:int=200):
+        super().__init__(parent)
+        self.layout = QtWidgets.QHBoxLayout()
+        self.camera_label = QtWidgets.QLabel("Select Camera:")
+        self.camera_label.setStyleSheet("font-size: 16px; color: #2E86C1;")
+        self.layout.addWidget(self.camera_label, 3)
+        self.camera_combo = QtWidgets.QComboBox()
+        self.camera_combo.addItems(available_cameras)
+        self.camera_combo.setStyleSheet(f"""
+            QComboBox {{
+                font-size: 14px;
+                padding: 5px;
+                border: 1px solid #BDC3C7;
+                border-radius: 9px;
+                min-width: {common_min_width}px;
+            }}
+        """)
+        self.layout.addWidget(self.camera_combo)
+        self.setLayout(self.layout)
+
+    def start(self):
+        self.camera_combo.setEnabled(False)  
+
+    def stop(self):
+        self.camera_combo.setEnabled(True)  
+
+    def update_styles(self, width):
+        camera_font_size = max(12, width // 30) 
+        self.camera_label.setStyleSheet(f"font-size: {camera_font_size}px; color: #2E86C1;")
+        self.camera_combo.setStyleSheet(f"""
+            QComboBox {{
+                font-size: {camera_font_size}px;
+                padding: 5px;
+                border: 1px solid #BDC3C7;
+                border-radius: 5px;
+                min-width: {width // 3}px;
+            }}
+        """)
+
+
+class BlinkTimerWidget(QtWidgets.QWidget):
+    """
+    Widget for setting the blink timer.
+    """
+    def __init__(self, initial_delay_seconds:int=5, parent=None, common_min_width:int=200):
+        super().__init__(parent)
+        self.layout = QtWidgets.QHBoxLayout()
+        self.delay_label = QtWidgets.QLabel("Blink Timer (seconds):")
+        self.delay_label.setStyleSheet("font-size: 16px; color: #2E86C1;")
+        self.layout.addWidget(self.delay_label, 3)
+        self.delay_spin_box = QtWidgets.QSlider(QtCore.Qt.Orientation.Horizontal)
+        self.delay_spin_box.setRange(1, 15)
+        self.delay_spin_box.setValue(initial_delay_seconds)
+        self.delay_spin_box.setTickPosition(QtWidgets.QSlider.TickPosition.TicksBelow)
+        self.delay_spin_box.setTickInterval(1)
+        self.delay_spin_box.setStyleSheet(f"""
+            QSlider {{
+                min-width: {common_min_width}px;
+            }}
+            QSlider::groove:horizontal {{
+                border: 1px solid #BDC3C7;
+                height: 8px;
+                background: #F2F3F4;
+                margin: 2px 0;
+                border-radius: 4px;
+            }}
+            QSlider::handle:horizontal {{
+                background: #2E86C1;
+                border: 1px solid #BDC3C7;
+                width: 18px;
+                margin: -5px 0;
+                border-radius: 9px;
+            }}
+        """)
+        self.layout.addWidget(self.delay_spin_box, 3)
+        self.delay_value_label = QtWidgets.QLabel(f"{initial_delay_seconds}")
+        self.delay_value_label.setStyleSheet("font-size: 14px; min-width: 30px;")
+        self.delay_spin_box.valueChanged.connect(
+            lambda value: self.delay_value_label.setText(f"{value}")
+        )
+        self.layout.addWidget(self.delay_value_label)
+        self.setLayout(self.layout)
+
+    def start(self):
+        self.delay_spin_box.setEnabled(False)
+
+    def stop(self):
+        self.delay_spin_box.setEnabled(True)  
+
+    def update_styles(self, width):
+        slider_font_size = max(12, width // 30)
+        self.delay_value_label.setStyleSheet(f"font-size: {slider_font_size}px; min-width: 30px;")
+        self.delay_spin_box.setStyleSheet(f"""
+            QSlider {{
+                min-width: {width // 3}px;
+            }}
+            QSlider::groove:horizontal {{
+                border: 1px solid #BDC3C7;
+                height: 8px;
+                background: #F2F3F4;
+                margin: 2px 0;
+                border-radius: 4px;
+            }}
+            QSlider::handle:horizontal {{
+                background: #2E86C1;
+                border: 1px solid #BDC3C7;
+                width: 18px;
+                margin: -5px 0;
+                border-radius: 9px;
+            }}
+        """)
+
+
+class DetectionSensitivityWidget(QtWidgets.QWidget):
+    def __init__(self, initial_quantile_index:int=4, parent=None, common_min_width:int=200):
+        super().__init__(parent)
+        self.layout = QtWidgets.QHBoxLayout()
+        self.quantile_label = QtWidgets.QLabel("Detection Sensitivity: ")
+        self.quantile_label.setStyleSheet("font-size: 16px; color: #2E86C1;")
+        self.layout.addWidget(self.quantile_label, 3)
+        self.quantile_slider = QtWidgets.QSlider(QtCore.Qt.Orientation.Horizontal)
+        self.quantile_slider.setRange(1, 5)
+        self.quantile_slider.setValue(initial_quantile_index)
+        self.quantile_slider.setTickPosition(QtWidgets.QSlider.TickPosition.TicksBelow)
+        self.quantile_slider.setTickInterval(1)
+        self.quantile_slider.setStyleSheet("""
+            QSlider {
+                min-width: 500px;
+            }
+            QSlider::groove:horizontal {
+                border: 1px solid #BDC3C7;
+                height: 8px;
+                background: #F2F3F4;
+                margin: 2px 0;
+                border-radius: 4px;
+            }
+            QSlider::handle:horizontal {
+                background: #2E86C1;
+                border: 1px solid #BDC3C7;
+                width: 18px;
+                margin: -5px 0;
+                border-radius: 9px;
+            }
+        """)
+        self.layout.addWidget(self.quantile_slider, 3)
+        self.quantile_value_label = QtWidgets.QLabel(str(initial_quantile_index))
+        self.quantile_value_label.setStyleSheet("font-size: 14px; min-width: 30px;")
+        self.quantile_slider.valueChanged.connect(
+            lambda value: self.quantile_value_label.setText(str(value))
+        )
+        self.layout.addWidget(self.quantile_value_label)
+        self.setLayout(self.layout)
+
+    def start(self):
+        self.quantile_slider.setEnabled(False)
+
+    def stop(self):
+        self.quantile_slider.setEnabled(True)
+
+    def update_styles(self, width):
+        slider_font_size = max(12, width // 30)
+        self.quantile_value_label.setStyleSheet(f"font-size: {slider_font_size}px; min-width: 30px;")
+        self.quantile_slider.setStyleSheet(f"""
+            QSlider {{
+                min-width: {width // 3}px;
+            }}
+            QSlider::groove:horizontal {{
+                border: 1px solid #BDC3C7;
+                height: 8px;
+                background: #F2F3F4;
+                margin: 2px 0;
+                border-radius: 4px;
+            }}
+            QSlider::handle:horizontal {{
+                background: #2E86C1;
+                border: 1px solid #BDC3C7;
+                width: 18px;
+                margin: -5px 0;
+                border-radius: 9px;
+            }}
+        """)
