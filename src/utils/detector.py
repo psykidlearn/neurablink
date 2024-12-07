@@ -93,10 +93,9 @@ class BaseCalibrator:
         raise NotImplementedError
 
     def set_threshold(self, changes: np.ndarray) -> None:
-        if not self.threshold:
-            self.threshold = np.quantile(
-                np.stack(self.buffer, axis=0).ravel(), self.quantile
-            )
+        self.threshold = np.quantile(
+            np.stack(self.buffer, axis=0).ravel(), self.quantile
+        )
 
     def __call__(self, changes: np.ndarray) -> float:
         raise NotImplementedError
@@ -115,7 +114,8 @@ class OneTimeCalibrator(BaseCalibrator):
 
     def __call__(self, changes: np.ndarray) -> float:
         if len(self.buffer) == self.buffer_size:
-            self.set_threshold(changes)
+            if not self.threshold:
+                self.set_threshold(changes)
             return self.threshold
         self.buffer.append(changes)
         return np.inf
@@ -135,6 +135,8 @@ class PeriodicCalibrator(BaseCalibrator):
         self.counter = 0
 
     def __call__(self, changes: np.ndarray) -> float:
+
+        self.counter += 1
         if self.counter == self.every_nth_frame:
             self.reset()
 
