@@ -2,47 +2,23 @@ from PyQt6 import QtWidgets, QtGui, QtCore
 import cv2
 
 class ControlWindow(QtWidgets.QWidget):
-    def __init__(self, blur_windows, icon_path:str, change_camera_func):
+    def __init__(self, blur_windows, icon_path:str, change_camera_func, blink_detector):
         super().__init__()
         self.blur_windows = blur_windows
         self.change_camera_func = change_camera_func # Function to change the camera feed
+        self.blink_detector = blink_detector
         self.available_cameras = self.get_available_cameras()
         self.initUI(icon_path)
         self.setStyle(QtWidgets.QStyleFactory.create('Fusion'))
         self.camera_combo.currentIndexChanged.connect(self.on_camera_selection_changed) # Connect camera selection change signal
         self.is_running = False  # track application state
 
-    def get_available_cameras(self):
-        """Get a list of available cameras"""
-        available_cameras = []
-        # We assume that users have not more than 5 cameras
-        for index in range(5):  
-            try:
-                cap = cv2.VideoCapture(index, cv2.CAP_DSHOW)  # Specify backend
-                if cap.isOpened():
-                    ret, _ = cap.read()
-                    if ret:
-                        available_cameras.append(f"Camera {index}")
-                    cap.release()
-            except:
-                continue
-        
-        # If no cameras found, add "No camera found" option
-        if not available_cameras:
-            available_cameras.append("No camera found")
-        
-        return available_cameras
-    
-    def on_camera_selection_changed(self, index):
-        """Handle camera selection change."""
-        self.change_camera_func(index)
-
     def initUI(self, icon_path:str):
         self.setWindowTitle('Neurablink - Control Panel')
         self.setGeometry(100, 100, 400, 300)  # Slightly larger default size
 
         # Set window icon
-        icon = QtGui.QIcon(icon_path)  # Replace with your logo path
+        icon = QtGui.QIcon(icon_path) 
         self.setWindowIcon(icon)
 
         # Main layout
@@ -56,24 +32,108 @@ class ControlWindow(QtWidgets.QWidget):
         self.title_label.setStyleSheet("font-size: 18px; font-weight: bold; color: #2E86C1;")
         self.layout.addWidget(self.title_label)
 
+        # Define a common minimum width for widget alignment
+        common_min_width = 500
+
         # Camera selection layout
         camera_selection_layout = QtWidgets.QHBoxLayout()
         camera_label = QtWidgets.QLabel("Select Camera:")
-        camera_label.setStyleSheet("font-size: 14px; color: #2E86C1;")
-        camera_selection_layout.addWidget(camera_label)
+        camera_label.setStyleSheet("font-size: 16px; color: #2E86C1;")
+        camera_selection_layout.addWidget(camera_label, 3) # Stretch factor of 3
         self.camera_combo = QtWidgets.QComboBox()
         self.camera_combo.addItems(self.available_cameras)
-        self.camera_combo.setStyleSheet("""
-            QComboBox {
+        self.camera_combo.setStyleSheet(f"""
+            QComboBox {{
                 font-size: 14px;
                 padding: 5px;
                 border: 1px solid #BDC3C7;
-                border-radius: 5px;
-                min-width: 150px;
-            }
+                border-radius: 9px;
+                min-width: {common_min_width}px;
+            }}
         """)
         camera_selection_layout.addWidget(self.camera_combo)
         self.layout.addLayout(camera_selection_layout)
+
+        # Blink Timer setting layout
+        self.initial_delay_seconds = 5 # Default blink timer
+        delay_layout = QtWidgets.QHBoxLayout()
+        delay_label = QtWidgets.QLabel("Blink Timer (seconds):")
+        delay_label.setStyleSheet("font-size: 16px; color: #2E86C1;")
+        delay_layout.addWidget(delay_label, 3) # Stretch factor of 3
+        self.delay_spin_box = QtWidgets.QSlider(QtCore.Qt.Orientation.Horizontal)
+        self.delay_spin_box.setRange(1, 15)  # Allow delay between 1 and 15 seconds
+        self.delay_spin_box.setValue(self.initial_delay_seconds)
+        self.delay_spin_box.setTickPosition(QtWidgets.QSlider.TickPosition.TicksBelow)
+        self.delay_spin_box.setTickInterval(1)
+        self.delay_spin_box.setStyleSheet(f"""
+            QSlider {{
+                min-width: {common_min_width}px;
+            }}
+            QSlider::groove:horizontal {{
+                border: 1px solid #BDC3C7;
+                height: 8px;
+                background: #F2F3F4;
+                margin: 2px 0;
+                border-radius: 4px;
+            }}
+            QSlider::handle:horizontal {{
+                background: #2E86C1;
+                border: 1px solid #BDC3C7;
+                width: 18px;
+                margin: -5px 0;
+                border-radius: 9px;
+            }}
+        """)
+        self.delay_spin_box.valueChanged.connect(self.update_initial_delay)
+        delay_layout.addWidget(self.delay_spin_box, 3) # Stretch factor of 3
+
+        self.delay_value_label = QtWidgets.QLabel(f"{self.initial_delay_seconds}")
+        self.delay_value_label.setStyleSheet("font-size: 14px; min-width: 30px;")
+        self.delay_spin_box.valueChanged.connect(
+            lambda value: self.delay_value_label.setText(f"{value}")
+        )
+        delay_layout.addWidget(self.delay_value_label)
+        self.layout.addLayout(delay_layout)
+
+        # Quantile setting layout
+        self.initial_quantile_index = 4
+        quantile_layout = QtWidgets.QHBoxLayout()
+        quantile_label = QtWidgets.QLabel("Detection Sensitivity: ")
+        quantile_label.setStyleSheet("font-size: 16px; color: #2E86C1;")
+        quantile_layout.addWidget(quantile_label, 3) # Stretch factor of 3
+        self.quantile_slider = QtWidgets.QSlider(QtCore.Qt.Orientation.Horizontal)
+        self.quantile_slider.setRange(1, 5)  # Slider values from 1 to 5
+        self.quantile_slider.setValue(self.initial_quantile_index)  # Default to 0.975
+        self.quantile_slider.setTickPosition(QtWidgets.QSlider.TickPosition.TicksBelow)
+        self.quantile_slider.setTickInterval(1)
+        self.quantile_slider.setStyleSheet(f"""
+            QSlider {{
+                min-width: {common_min_width}px;
+            }}
+            QSlider::groove:horizontal {{
+                border: 1px solid #BDC3C7;
+                height: 8px;
+                background: #F2F3F4;
+                margin: 2px 0;
+                border-radius: 4px;
+            }}
+            QSlider::handle:horizontal {{
+                background: #2E86C1;
+                border: 1px solid #BDC3C7;
+                width: 18px;
+                margin: -5px 0;
+                border-radius: 9px;
+            }}
+        """)
+        self.quantile_slider.valueChanged.connect(self.update_quantile)
+        quantile_layout.addWidget(self.quantile_slider, 3) # Stretch factor of 3
+        self.quantile_value_label = QtWidgets.QLabel(str(self.initial_quantile_index))
+        self.quantile_value_label.setStyleSheet("font-size: 14px; min-width: 30px;")
+        self.quantile_slider.valueChanged.connect(
+            lambda value: self.quantile_value_label.setText(str(value))
+        )
+        quantile_layout.addWidget(self.quantile_value_label)
+        self.layout.addLayout(quantile_layout)
 
         # Add camera live feed
         self.camera_label = QtWidgets.QLabel()
@@ -149,6 +209,7 @@ class ControlWindow(QtWidgets.QWidget):
         title_font_size = max(14, width // 20)
         description_font_size = max(12, width // 30)
         button_font_size = max(12, width // 25)
+        slider_font_size = max(12, width // 30)
         camera_font_size = max(12, width // 30) 
 
         # Update styles
@@ -178,10 +239,9 @@ class ControlWindow(QtWidgets.QWidget):
                 background-color: #B03A2E;
             }}
         """)
-        for widget in self.findChildren(QtWidgets.QLabel):
-            if widget.text() == "Select Camera:":
-                widget.setStyleSheet(f"font-size: {camera_font_size}px; color: #2E86C1;")
-        
+
+        # Camera selection label and combo box
+        self.camera_label.setStyleSheet(f"font-size: {camera_font_size}px; color: #2E86C1;")
         self.camera_combo.setStyleSheet(f"""
             QComboBox {{
                 font-size: {camera_font_size}px;
@@ -189,6 +249,50 @@ class ControlWindow(QtWidgets.QWidget):
                 border: 1px solid #BDC3C7;
                 border-radius: 5px;
                 min-width: {width // 3}px;
+            }}
+        """)
+
+        # Blink timer slider
+        self.delay_value_label.setStyleSheet(f"font-size: {slider_font_size}px; min-width: 30px;")
+        self.delay_spin_box.setStyleSheet(f"""
+            QSlider {{
+                min-width: {width // 3}px;
+            }}
+            QSlider::groove:horizontal {{
+                border: 1px solid #BDC3C7;
+                height: 8px;
+                background: #F2F3F4;
+                margin: 2px 0;
+                border-radius: 4px;
+            }}
+            QSlider::handle:horizontal {{
+                background: #2E86C1;
+                border: 1px solid #BDC3C7;
+                width: 18px;
+                margin: -5px 0;
+                border-radius: 9px;
+            }}
+        """)
+
+        # Detection sensitivity slider
+        self.quantile_value_label.setStyleSheet(f"font-size: {slider_font_size}px; min-width: 30px;")
+        self.quantile_slider.setStyleSheet(f"""
+            QSlider {{
+                min-width: {width // 3}px;
+            }}
+            QSlider::groove:horizontal {{
+                border: 1px solid #BDC3C7;
+                height: 8px;
+                background: #F2F3F4;
+                margin: 2px 0;
+                border-radius: 4px;
+            }}
+            QSlider::handle:horizontal {{
+                background: #2E86C1;
+                border: 1px solid #BDC3C7;
+                width: 18px;
+                margin: -5px 0;
+                border-radius: 9px;
             }}
         """)
 
@@ -205,9 +309,13 @@ class ControlWindow(QtWidgets.QWidget):
             window.showFullScreen()
             window.start_opacity()  # Start the blurring process
 
-        # Disable the start button and camera switching, change button appearance, and update its text
+        # Disable Start button, camera switching, blink timer and detection sensitivity changes
         self.camera_combo.setEnabled(False)  
+        self.delay_spin_box.setEnabled(False)
+        self.quantile_slider.setEnabled(False) 
         self.start_button.setEnabled(False)
+
+        # Change Start button appearance and update its text
         self.start_button.setText("Detecting your Blinks...")
         self.start_button.setStyleSheet("background-color: #A9A9A9; color: grey; font-size: 14px;")
 
@@ -218,6 +326,8 @@ class ControlWindow(QtWidgets.QWidget):
 
         # Re-enable the start button, restore its original appearance, and update its text
         self.camera_combo.setEnabled(True)
+        self.delay_spin_box.setEnabled(True)
+        self.quantile_slider.setEnabled(True)
         self.start_button.setEnabled(True)
         self.start_button.setText("Start")
         self.start_button.setStyleSheet("""
@@ -238,6 +348,36 @@ class ControlWindow(QtWidgets.QWidget):
         self.stop_application()  
         event.accept()  
     
+    def update_initial_delay(self, value):
+        self.initial_delay_seconds = value
+        for window in self.blur_windows:
+            window.initial_delay_seconds = value 
+
+    def get_available_cameras(self):
+        """Get a list of available cameras"""
+        available_cameras = []
+        # We assume that users have not more than 5 cameras
+        for index in range(5):  
+            try:
+                cap = cv2.VideoCapture(index, cv2.CAP_DSHOW)  # Specify backend
+                if cap.isOpened():
+                    ret, _ = cap.read()
+                    if ret:
+                        available_cameras.append(f"Camera {index}")
+                    cap.release()
+            except:
+                continue
+        
+        # If no cameras found, add "No camera found" option
+        if not available_cameras:
+            available_cameras.append("No camera found")
+        
+        return available_cameras
+    
+    def on_camera_selection_changed(self, index):
+        """Handle camera selection change."""
+        self.change_camera_func(index)
+
     def update_camera_feed(self, frame):
         # Convert frame to QImage
         height, width, channel = frame.shape
@@ -248,7 +388,12 @@ class ControlWindow(QtWidgets.QWidget):
         scaled_pixmap = pixmap.scaled(self.camera_label.size(), QtCore.Qt.AspectRatioMode.KeepAspectRatio)
         self.camera_label.setPixmap(scaled_pixmap)
     
+    def update_quantile(self, value):
+        quantile_values = [0.99, 0.975, 0.96, 0.945, 0.93]
+        selected_quantile = quantile_values[value - 1]
+        self.blink_detector.module.calibrator.quantile = selected_quantile #affects detector as it is passed by reference
 
+    
 class BlurWindow(QtWidgets.QWidget):
     def __init__(self, screen):
         super().__init__()

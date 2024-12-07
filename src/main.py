@@ -3,10 +3,7 @@ import hydra
 from omegaconf import DictConfig
 from PyQt6 import QtWidgets, QtGui, QtCore
 from utils.screen import ControlWindow, BlurWindow, reset_all_windows
-from utils.frame_processor import FrameProcessor
-from utils.camera import CameraManager
 import sys
-import numpy as np
 
 
 @hydra.main(version_base=None, config_path="../configs", config_name="main")
@@ -49,7 +46,8 @@ def main(cfg: DictConfig):
     control_window = ControlWindow(
         blur_windows=blur_windows,
         icon_path=cfg.icon_path,
-        change_camera_func=camera_manager.change
+        change_camera_func=camera_manager.change,
+        blink_detector=blink_detector
         )
     control_window.closeEvent = lambda event: camera_manager.stop()
 
