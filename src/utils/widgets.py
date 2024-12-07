@@ -1,17 +1,18 @@
 from PyQt6 import QtWidgets, QtGui, QtCore
+import cv2
 
 class CameraSelectionWidget(QtWidgets.QWidget):
     """
     Widget for selecting the camera from a list of available cameras.
     """
-    def __init__(self, available_cameras, parent=None, common_min_width:int=200):
+    def __init__(self, parent=None, common_min_width:int=200):
         super().__init__(parent)
         self.layout = QtWidgets.QHBoxLayout()
         self.camera_label = QtWidgets.QLabel("Select Camera:")
         self.camera_label.setStyleSheet("font-size: 16px; color: #2E86C1;")
         self.layout.addWidget(self.camera_label, 3)
         self.camera_combo = QtWidgets.QComboBox()
-        self.camera_combo.addItems(available_cameras)
+        self.camera_combo.addItems(self.get_available_cameras())
         self.camera_combo.setStyleSheet(f"""
             QComboBox {{
                 font-size: 14px;
@@ -42,6 +43,27 @@ class CameraSelectionWidget(QtWidgets.QWidget):
                 min-width: {width // 3}px;
             }}
         """)
+    
+    def get_available_cameras(self):
+        """Get a list of available cameras"""
+        available_cameras = []
+        # We assume that users have not more than 5 cameras
+        for index in range(5):  
+            try:
+                cap = cv2.VideoCapture(index, cv2.CAP_DSHOW)  # Specify backend
+                if cap.isOpened():
+                    ret, _ = cap.read()
+                    if ret:
+                        available_cameras.append(f"Camera {index}")
+                    cap.release()
+            except:
+                continue
+        
+        # If no cameras found, raise an error and exit
+        if not available_cameras:
+            raise RuntimeError("No camera found. Please connect a camera and try again.")
+        
+        return available_cameras
 
 
 class BlinkTimerWidget(QtWidgets.QWidget):

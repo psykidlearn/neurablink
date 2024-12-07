@@ -9,7 +9,6 @@ class ControlWindow(QtWidgets.QWidget):
         self.blur_windows = blur_windows
         self.change_camera_func = change_camera_func # Function to change the camera feed
         self.blink_detector = blink_detector
-        self.available_cameras = self.get_available_cameras()
         self.initUI(icon_path)
         self.setStyle(QtWidgets.QStyleFactory.create('Fusion'))
         self.is_running = False  # track application state
@@ -38,7 +37,6 @@ class ControlWindow(QtWidgets.QWidget):
 
         # Camera selection layout   
         self.camera_selection_widget = CameraSelectionWidget(
-            available_cameras=self.available_cameras, 
             parent=None,
             common_min_width=common_min_width
             )
@@ -89,10 +87,6 @@ class ControlWindow(QtWidgets.QWidget):
         self.update_styles()
         self.show()
 
-    def resizeEvent(self, event):
-        self.update_styles()
-        super().resizeEvent(event)
-
     def update_styles(self):
         width = self.width()
 
@@ -107,12 +101,6 @@ class ControlWindow(QtWidgets.QWidget):
         self.camera_selection_widget.update_styles(width)   
         self.blink_timer_widget.update_styles(width)
         self.detection_sensitivity_widget.update_styles(width)
-
-    def keyPressEvent(self, event):
-        if event.key() in (QtCore.Qt.Key.Key_Return, QtCore.Qt.Key.Key_Enter, QtCore.Qt.Key.Key_Space):
-            event.ignore()  # Ignore the Enter and Space key presses
-        else:
-            super().keyPressEvent(event)
 
     def start_application(self):
         self.is_running = True # update application state
@@ -138,36 +126,20 @@ class ControlWindow(QtWidgets.QWidget):
         self.detection_sensitivity_widget.stop()
         self.button_layout.stop()   
 
+    def keyPressEvent(self, event):
+        if event.key() in (QtCore.Qt.Key.Key_Return, QtCore.Qt.Key.Key_Enter, QtCore.Qt.Key.Key_Space):
+            event.ignore()  # Ignore the Enter and Space key presses
+        else:
+            super().keyPressEvent(event)
+
+    def resizeEvent(self, event):
+        self.update_styles()
+        super().resizeEvent(event)
+
     def closeEvent(self, event):
         #Closing control window will stop the application
         self.stop_application()  
         event.accept()  
-    
-    def update_initial_delay(self, value):
-        self.initial_delay_seconds = value
-        for window in self.blur_windows:
-            window.initial_delay_seconds = value 
-
-    def get_available_cameras(self):
-        """Get a list of available cameras"""
-        available_cameras = []
-        # We assume that users have not more than 5 cameras
-        for index in range(5):  
-            try:
-                cap = cv2.VideoCapture(index, cv2.CAP_DSHOW)  # Specify backend
-                if cap.isOpened():
-                    ret, _ = cap.read()
-                    if ret:
-                        available_cameras.append(f"Camera {index}")
-                    cap.release()
-            except:
-                continue
-        
-        # If no cameras found, add "No camera found" option
-        if not available_cameras:
-            available_cameras.append("No camera found")
-        
-        return available_cameras
     
     def on_camera_selection_changed(self, index):
         """Handle camera selection change."""
@@ -183,6 +155,11 @@ class ControlWindow(QtWidgets.QWidget):
         scaled_pixmap = pixmap.scaled(self.camera_label.size(), QtCore.Qt.AspectRatioMode.KeepAspectRatio)
         self.camera_label.setPixmap(scaled_pixmap)
     
+    def update_initial_delay(self, value):
+        self.initial_delay_seconds = value
+        for window in self.blur_windows:
+            window.initial_delay_seconds = value 
+
     def update_quantile(self, value):
         quantile_values = [0.99, 0.975, 0.96, 0.945, 0.93]
         selected_quantile = quantile_values[value - 1]
