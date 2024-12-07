@@ -4,7 +4,7 @@ from omegaconf import DictConfig
 from PyQt6 import QtWidgets, QtGui, QtCore
 from utils.screen import ControlWindow, BlurWindow, reset_all_windows
 import sys
-import pathlib as plb
+
 
 @hydra.main(version_base=None, config_path="../configs", config_name="main")
 def main(cfg: DictConfig):

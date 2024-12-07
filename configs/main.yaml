@@ -13,7 +13,7 @@ blink_detector:
       quantile: 0.98
   buffer_size: 3
 verbose: false
-icon_path: ./files/icon.png
+icon_path: ./assets/icon.png
 
 defaults:  
   - _self_  
