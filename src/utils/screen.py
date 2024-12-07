@@ -2,18 +2,20 @@ from PyQt6 import QtWidgets, QtGui, QtCore
 import cv2
 
 class ControlWindow(QtWidgets.QWidget):
-    def __init__(self, blur_windows, icon_path:str):
+    def __init__(self, blur_windows, icon_path:str, change_camera_func):
         super().__init__()
         self.blur_windows = blur_windows
+        self.change_camera_func = change_camera_func # Function to change the camera feed
         self.available_cameras = self.get_available_cameras()
         self.initUI(icon_path)
         self.setStyle(QtWidgets.QStyleFactory.create('Fusion'))
+        self.camera_combo.currentIndexChanged.connect(self.on_camera_selection_changed) # Connect camera selection change signal
         self.is_running = False  # track application state
 
     def get_available_cameras(self):
         """Get a list of available cameras"""
         available_cameras = []
-        # If you have more than 5 cameras, what the hell is wrong with you?
+        # We assume that users have not more than 5 cameras
         for index in range(5):  
             try:
                 cap = cv2.VideoCapture(index, cv2.CAP_DSHOW)  # Specify backend
@@ -31,6 +33,10 @@ class ControlWindow(QtWidgets.QWidget):
         
         return available_cameras
     
+    def on_camera_selection_changed(self, index):
+        """Handle camera selection change."""
+        self.change_camera_func(index)
+
     def initUI(self, icon_path:str):
         self.setWindowTitle('Neurablink - Control Panel')
         self.setGeometry(100, 100, 400, 300)  # Slightly larger default size
@@ -50,7 +56,7 @@ class ControlWindow(QtWidgets.QWidget):
         self.title_label.setStyleSheet("font-size: 18px; font-weight: bold; color: #2E86C1;")
         self.layout.addWidget(self.title_label)
 
-
+        # Camera selection layout
         camera_selection_layout = QtWidgets.QHBoxLayout()
         camera_label = QtWidgets.QLabel("Select Camera:")
         camera_label.setStyleSheet("font-size: 14px; color: #2E86C1;")
@@ -68,8 +74,6 @@ class ControlWindow(QtWidgets.QWidget):
         """)
         camera_selection_layout.addWidget(self.camera_combo)
         self.layout.addLayout(camera_selection_layout)
-
-
 
         # Add camera live feed
         self.camera_label = QtWidgets.QLabel()
