@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import mediapipe as mp
 import pickle
-from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt6.QtCore import QObject, pyqtSignal
 from typing import Callable, Dict, List, Optional, Tuple
 
 
