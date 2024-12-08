@@ -69,7 +69,7 @@ class ControlWindow(QtWidgets.QWidget):
 
         # Add camera live feed
         self.camera_feed = CameraFeed(parent=None)
-        self.layout.addWidget(self.camera_feed)
+        self.layout.addWidget(self.camera_feed, stretch=3)
 
         # Description label
         self.description_label = QtWidgets.QLabel(
@@ -96,18 +96,19 @@ class ControlWindow(QtWidgets.QWidget):
         Update the styles of the widgets based on the window size.
         """
         width = self.width()
+        height = self.height()
 
         # Update font sizes based on window size
-        title_font_size = max(14, width // 20)
-        description_font_size = max(12, width // 30)
+        title_font_size = max(14, min(width // 20, height // 15))
+        description_font_size = max(12, min(width // 40, height // 30))
 
         # Update styles
         self.title_label.setStyleSheet(f"font-size: {title_font_size}px; font-weight: bold; color: #2E86C1;")
         self.description_label.setStyleSheet(f"font-size: {description_font_size}px; color: #5D6D7E;")
-        self.button_layout.update_styles(width)
-        self.camera_selection_widget.update_styles(width)   
-        self.blink_timer_widget.update_styles(width)
-        self.detection_sensitivity_widget.update_styles(width)
+        self.button_layout.update_styles(width, height)
+        self.camera_selection_widget.update_styles(width, height)   
+        self.blink_timer_widget.update_styles(width, height)
+        self.detection_sensitivity_widget.update_styles(width, height)
 
     def start_application(self):
         """
