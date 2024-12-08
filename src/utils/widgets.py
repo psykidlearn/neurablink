@@ -31,8 +31,8 @@ class CameraSelectionWidget(QtWidgets.QWidget):
     def stop(self):
         self.camera_combo.setEnabled(True)  
 
-    def update_styles(self, width):
-        camera_font_size = max(12, width // 30) 
+    def update_styles(self, width, height):
+        camera_font_size = max(12, min(width // 40, height // 30)) 
         self.camera_label.setStyleSheet(f"font-size: {camera_font_size}px; color: #2E86C1;")
         self.camera_combo.setStyleSheet(f"""
             QComboBox {{
@@ -50,7 +50,7 @@ class CameraSelectionWidget(QtWidgets.QWidget):
         # We assume that users have not more than 5 cameras
         for index in range(5):  
             try:
-                cap = cv2.VideoCapture(index, cv2.CAP_DSHOW)  # Specify backend
+                cap = cv2.VideoCapture(index)  
                 if cap.isOpened():
                     ret, _ = cap.read()
                     if ret:
@@ -103,7 +103,8 @@ class BlinkTimerWidget(QtWidgets.QWidget):
         self.layout.addWidget(self.delay_spin_box, 3)
         self.delay_value_label = QtWidgets.QLabel(f"{initial_delay_seconds}")
         self.delay_value_label.setStyleSheet("font-size: 14px; min-width: 30px;")
-        self.delay_spin_box.valueChanged.connect(connect_func)
+        self.delay_spin_box.valueChanged.connect(self.on_value_changed)
+        self.connect_func = connect_func 
         self.layout.addWidget(self.delay_value_label)
         self.setLayout(self.layout)
 
@@ -113,8 +114,9 @@ class BlinkTimerWidget(QtWidgets.QWidget):
     def stop(self):
         self.delay_spin_box.setEnabled(True)  
 
-    def update_styles(self, width):
-        slider_font_size = max(12, width // 30)
+    def update_styles(self, width, height):
+        slider_font_size = max(12, min(width // 40, height // 30))
+        self.delay_label.setStyleSheet(f"font-size: {slider_font_size}px; color: #2E86C1;")
         self.delay_value_label.setStyleSheet(f"font-size: {slider_font_size}px; min-width: 30px;")
         self.delay_spin_box.setStyleSheet(f"""
             QSlider {{
@@ -135,6 +137,11 @@ class BlinkTimerWidget(QtWidgets.QWidget):
                 border-radius: 9px;
             }}
         """)
+
+    def on_value_changed(self, value):
+        self.delay_value_label.setText(str(value))
+        if self.connect_func:
+            self.connect_func(value)
 
 
 class DetectionSensitivityWidget(QtWidgets.QWidget):
@@ -174,7 +181,8 @@ class DetectionSensitivityWidget(QtWidgets.QWidget):
         self.layout.addWidget(self.quantile_slider, 3)
         self.quantile_value_label = QtWidgets.QLabel(str(initial_quantile_index))
         self.quantile_value_label.setStyleSheet("font-size: 14px; min-width: 30px;")
-        self.quantile_slider.valueChanged.connect(connect_func)
+        self.quantile_slider.valueChanged.connect(self.on_value_changed)
+        self.connect_func = connect_func
         self.layout.addWidget(self.quantile_value_label)
         self.setLayout(self.layout)
 
@@ -184,8 +192,9 @@ class DetectionSensitivityWidget(QtWidgets.QWidget):
     def stop(self):
         self.quantile_slider.setEnabled(True)
 
-    def update_styles(self, width):
-        slider_font_size = max(12, width // 30)
+    def update_styles(self, width, height):
+        slider_font_size = max(12, min(width // 40, height // 30))
+        self.quantile_label.setStyleSheet(f"font-size: {slider_font_size}px; color: #2E86C1;")
         self.quantile_value_label.setStyleSheet(f"font-size: {slider_font_size}px; min-width: 30px;")
         self.quantile_slider.setStyleSheet(f"""
             QSlider {{
@@ -206,6 +215,11 @@ class DetectionSensitivityWidget(QtWidgets.QWidget):
                 border-radius: 9px;
             }}
         """)
+
+    def on_value_changed(self, value):
+        self.quantile_value_label.setText(str(value))  # Update the label with the current slider value
+        if self.connect_func:
+            self.connect_func(value)
 
 
 class ButtonLayout(QtWidgets.QHBoxLayout):
@@ -275,8 +289,8 @@ class ButtonLayout(QtWidgets.QHBoxLayout):
             }
         """)
 
-    def update_styles(self, width):
-        button_font_size = max(12, width // 25)
+    def update_styles(self, width, height):
+        button_font_size = max(12, min(width // 40, height // 30))
         self.start_button.setStyleSheet(f"""
             QPushButton {{
                 background-color: #28B463; 
