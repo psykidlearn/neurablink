@@ -5,11 +5,14 @@ blink_detector:
     eye_detector: 
       _target_: utils.detector.FaceMeshLandmarksDetector
       mask_size: 16
-      default_landmarks_path: ./assets/default_landmarks.pkl
+      default_landmarks_path:
+        _target_: utils.distribution.bundled_path
+        _partial_: false
+        relative_path: assets/default_landmarks.pkl
     calibrator:
       _target_: utils.detector.ContinuousCalibrator
       buffer_size: 200
-      quantile: 0.975
+      quantile: 0.97
   buffer_size: 3
 
 camera_manager:
@@ -20,7 +23,10 @@ frame_processor:
   highlight_intensity: 100
 
 verbose: false
-icon_path: ./assets/icon.png
+icon_path: 
+  _target_: utils.distribution.bundled_path
+  _partial_: false
+  relative_path: assets/icon.png
 
 defaults:  
   - _self_  

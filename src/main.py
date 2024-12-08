@@ -2,14 +2,15 @@ import cv2
 import hydra
 from omegaconf import DictConfig
 from PyQt6 import QtWidgets, QtGui, QtCore
-from utils.screen import ControlWindow, BlurWindow, reset_all_windows
-from utils.frame_processor import FrameProcessor
-from utils.camera import CameraManager
 import sys
-import numpy as np
+from utils.screen import *
+from utils.detector import *
+from utils.camera import *
+from utils.frame_processor import *
+from utils.distribution import bundled_path
 
 
-@hydra.main(version_base=None, config_path="../configs", config_name="main")
+@hydra.main(version_base=None, config_path=bundled_path("configs"), config_name="main")
 def main(cfg: DictConfig):
     # Instantiate the blink detector from configuration
     blink_detector = hydra.utils.instantiate(cfg.blink_detector)
@@ -22,11 +23,12 @@ def main(cfg: DictConfig):
         sys.exit(1)
 
     # Initialize the Qt application and setup UI components
+    icon_path = hydra.utils.instantiate(cfg.icon_path)
     app = QtWidgets.QApplication([])
-    if not QtGui.QIcon(cfg.icon_path).isNull():
-        app.setWindowIcon(QtGui.QIcon(cfg.icon_path))
+    if not QtGui.QIcon(icon_path).isNull():
+        app.setWindowIcon(QtGui.QIcon(icon_path))
     else:
-        print(f"Warning: Icon file not found at {cfg.icon_path}")
+        print(f"Warning: Icon file not found at {icon_path}")
 
     # Create blur windows for all screens
     blur_windows = [
@@ -48,7 +50,7 @@ def main(cfg: DictConfig):
     # Create the control window
     control_window = ControlWindow(
         blur_windows=blur_windows,
-        icon_path=cfg.icon_path,
+        icon_path=icon_path,
         change_camera_func=camera_manager.change
         )
     control_window.closeEvent = lambda event: camera_manager.stop()
