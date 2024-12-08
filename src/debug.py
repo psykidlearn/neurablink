@@ -1,9 +1,3 @@
-from utils.screen import *
-from utils.detector import *
-from utils.camera import *
-from utils.frame_processor import *
-from utils.widgets import *
-from utils.distribution import bundled_path
 from utils.main import main_func
 from omegaconf import DictConfig
 import hydra

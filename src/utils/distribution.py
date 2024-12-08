@@ -9,10 +9,8 @@ def bundled_path(relative_path):
         return os.path.join(sys._MEIPASS, relative_path)
     return os.path.abspath(relative_path)
 
-
 def set_working_directory():
     """Set working directory to the PyInstaller temporary directory if running as a packaged executable."""
     if hasattr(sys, '_MEIPASS'):
         # Change working directory to the PyInstaller temporary directory
         os.chdir(sys._MEIPASS)
-

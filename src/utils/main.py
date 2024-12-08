@@ -1,13 +1,10 @@
-from utils.screen import *
-from utils.detector import *
-from utils.camera import *
-from utils.frame_processor import *
-from utils.widgets import *
 import cv2
 import hydra
 from omegaconf import DictConfig
 from PyQt6 import QtWidgets, QtGui, QtCore
 import sys
+from .screen import ControlWindow, BlurWindow, reset_all_windows
+
 
 
 def main_func(cfg: DictConfig):
@@ -81,3 +78,7 @@ def main_func(cfg: DictConfig):
     # Release camera on exit
     if cap.isOpened():
         cap.release()
+
+
+if __name__ == "__main__":
+    main_func()
