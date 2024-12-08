@@ -269,21 +269,3 @@ def reset_all_windows(blur_windows):
     for window in blur_windows:
         # Use invokeMethod to ensure the method is called in the correct thread
         QtCore.QMetaObject.invokeMethod(window, "reset_opacity", QtCore.Qt.ConnectionType.QueuedConnection)
-
-
-def main():
-    app = QtWidgets.QApplication([])
-    app.setWindowIcon(QtGui.QIcon("C:/Users/s_gue/Desktop/projects/neurablink/src/files/icon.png"))
-    blur_windows = []
-    for screen in app.screens():
-        blur_window = BlurWindow(screen)
-        blur_window.setGeometry(screen.geometry())  # Set the geometry to the screen's geometry
-        blur_window.showFullScreen()  # Show the window in full screen mode
-        blur_windows.append(blur_window)
-
-    control_window = ControlWindow(blur_windows)
-    #keyboard.add_hotkey('space', reset_all_windows, args=(blur_windows,)) # Debugging
-    app.exec()
-
-if __name__ == "__main__":
-    main() 
