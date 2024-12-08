@@ -2,6 +2,7 @@ from utils.screen import *
 from utils.detector import *
 from utils.camera import *
 from utils.frame_processor import *
+from utils.widgets import *
 from utils.distribution import bundled_path
 import cv2
 import hydra
