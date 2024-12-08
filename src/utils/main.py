@@ -3,7 +3,6 @@ from utils.detector import *
 from utils.camera import *
 from utils.frame_processor import *
 from utils.widgets import *
-from utils.distribution import bundled_path
 import cv2
 import hydra
 from omegaconf import DictConfig
@@ -11,8 +10,7 @@ from PyQt6 import QtWidgets, QtGui, QtCore
 import sys
 
 
-@hydra.main(version_base=None, config_path=bundled_path("configs"), config_name="main")
-def main(cfg: DictConfig):
+def main_func(cfg: DictConfig):
     # Instantiate the blink detector from configuration
     blink_detector = hydra.utils.instantiate(cfg.blink_detector)
 
@@ -24,7 +22,11 @@ def main(cfg: DictConfig):
         sys.exit(1)
 
     # Initialize the Qt application and setup UI components
-    icon_path = hydra.utils.instantiate(cfg.icon_path)
+    try:
+        icon_path = hydra.utils.instantiate(cfg.icon_path)
+    except Exception as e:
+        print(e)
+        icon_path = cfg.icon_path
     app = QtWidgets.QApplication([])
     if not QtGui.QIcon(icon_path).isNull():
         app.setWindowIcon(QtGui.QIcon(icon_path))
@@ -79,7 +81,3 @@ def main(cfg: DictConfig):
     # Release camera on exit
     if cap.isOpened():
         cap.release()
-
-
-if __name__ == "__main__":
-    main()
