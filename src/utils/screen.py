@@ -1,54 +1,36 @@
 from PyQt6 import QtWidgets, QtGui, QtCore
-import cv2
+from .widgets import CameraSelectionWidget, BlinkTimerWidget, DetectionSensitivityWidget, ButtonLayout   
+from .camera import CameraFeed
+
 
 class ControlWindow(QtWidgets.QWidget):
-    def __init__(self, blur_windows, icon_path:str, change_camera_func):
+    """
+    Main window for controlling the application.
+    """
+    def __init__(self, blur_windows, icon_path:str, change_camera_func, blink_detector):
         super().__init__()
         self.blur_windows = blur_windows
         self.change_camera_func = change_camera_func # Function to change the camera feed
-        self.available_cameras = self.get_available_cameras()
+        self.blink_detector = blink_detector
         self.initUI(icon_path)
         self.setStyle(QtWidgets.QStyleFactory.create('Fusion'))
-        self.camera_combo.currentIndexChanged.connect(self.on_camera_selection_changed) # Connect camera selection change signal
         self.is_running = False  # track application state
 
-    def get_available_cameras(self):
-        """Get a list of available cameras"""
-        available_cameras = []
-        # We assume that users have not more than 5 cameras
-        for index in range(5):  
-            try:
-                cap = cv2.VideoCapture(index, cv2.CAP_DSHOW)  # Specify backend
-                if cap.isOpened():
-                    ret, _ = cap.read()
-                    if ret:
-                        available_cameras.append(f"Camera {index}")
-                    cap.release()
-            except:
-                continue
-        
-        # If no cameras found, add "No camera found" option
-        if not available_cameras:
-            available_cameras.append("No camera found")
-        
-        return available_cameras
-    
-    def on_camera_selection_changed(self, index):
-        """Handle camera selection change."""
-        self.change_camera_func(index)
-
     def initUI(self, icon_path:str):
+        """
+        Initialize the UI of the control window.
+        """
         self.setWindowTitle('Neurablink - Control Panel')
         self.setGeometry(100, 100, 400, 300)  # Slightly larger default size
 
         # Set window icon
-        icon = QtGui.QIcon(icon_path)  # Replace with your logo path
+        icon = QtGui.QIcon(icon_path) 
         self.setWindowIcon(icon)
 
         # Main layout
         self.layout = QtWidgets.QVBoxLayout()
-        self.layout.setContentsMargins(20, 20, 20, 20)  # Add margins
-        self.layout.setSpacing(15)  # Add spacing between widgets
+        self.layout.setContentsMargins(20, 20, 20, 20)  # margins
+        self.layout.setSpacing(15)  # spacing between widgets
 
         # Title label
         self.title_label = QtWidgets.QLabel('Neurablink - Blink Detector')
@@ -56,30 +38,38 @@ class ControlWindow(QtWidgets.QWidget):
         self.title_label.setStyleSheet("font-size: 18px; font-weight: bold; color: #2E86C1;")
         self.layout.addWidget(self.title_label)
 
-        # Camera selection layout
-        camera_selection_layout = QtWidgets.QHBoxLayout()
-        camera_label = QtWidgets.QLabel("Select Camera:")
-        camera_label.setStyleSheet("font-size: 14px; color: #2E86C1;")
-        camera_selection_layout.addWidget(camera_label)
-        self.camera_combo = QtWidgets.QComboBox()
-        self.camera_combo.addItems(self.available_cameras)
-        self.camera_combo.setStyleSheet("""
-            QComboBox {
-                font-size: 14px;
-                padding: 5px;
-                border: 1px solid #BDC3C7;
-                border-radius: 5px;
-                min-width: 150px;
-            }
-        """)
-        camera_selection_layout.addWidget(self.camera_combo)
-        self.layout.addLayout(camera_selection_layout)
+        # Define common minimum width for widget alignment
+        common_min_width = 200
+
+        # Camera selection layout   
+        self.camera_selection_widget = CameraSelectionWidget(
+            parent=None,
+            common_min_width=common_min_width
+            )
+        self.layout.addWidget(self.camera_selection_widget)
+        self.camera_selection_widget.camera_combo.currentIndexChanged.connect(self.on_camera_selection_changed) # Connect camera selection change signal
+
+        # Blink Timer setting layout
+        self.blink_timer_widget = BlinkTimerWidget(
+            initial_delay_seconds=5,
+            parent=None,
+            common_min_width=common_min_width,
+            connect_func=self.update_initial_delay
+            )
+        self.layout.addWidget(self.blink_timer_widget)
+
+        # Quantile setting layout
+        self.detection_sensitivity_widget = DetectionSensitivityWidget(
+            initial_quantile_index=4,
+            parent=None,
+            common_min_width=common_min_width,
+            connect_func=self.update_quantile
+            )
+        self.layout.addWidget(self.detection_sensitivity_widget)
 
         # Add camera live feed
-        self.camera_label = QtWidgets.QLabel()
-        self.camera_label.setMinimumSize(320, 240)  # Adjust size as needed
-        self.camera_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
-        self.layout.addWidget(self.camera_label)
+        self.camera_feed = CameraFeed(parent=None)
+        self.layout.addWidget(self.camera_feed)
 
         # Description label
         self.description_label = QtWidgets.QLabel(
@@ -91,165 +81,119 @@ class ControlWindow(QtWidgets.QWidget):
         self.layout.addWidget(self.description_label)
 
         # Button layout
-        button_layout = QtWidgets.QHBoxLayout()
-        button_layout.setSpacing(10)
+        self.button_layout = ButtonLayout(
+            start_callback=self.start_application, 
+            stop_callback=self.stop_application
+            )
+        self.layout.addLayout(self.button_layout)
 
-        # Start button
-        self.start_button = QtWidgets.QPushButton('Start')
-        self.start_button.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
-        self.start_button.setMinimumSize(100, 40)
-        self.start_button.setStyleSheet("""
-            QPushButton {
-                background-color: #28B463; 
-                color: white; 
-                font-size: 14px; 
-                border-radius: 10px;
-                padding: 10px;
-            }
-            QPushButton:hover {
-                background-color: #239B56;
-            }
-        """)
-        self.start_button.clicked.connect(self.start_application)
-        button_layout.addWidget(self.start_button)
-
-        # Stop button
-        self.stop_button = QtWidgets.QPushButton('Stop')
-        self.stop_button.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
-        self.stop_button.setMinimumSize(100, 40)
-        self.stop_button.setStyleSheet("""
-            QPushButton {
-                background-color: #CB4335; 
-                color: white; 
-                font-size: 14px; 
-                border-radius: 10px;
-                padding: 10px;
-            }
-            QPushButton:hover {
-                background-color: #B03A2E;
-            }
-        """)
-        self.stop_button.clicked.connect(self.stop_application)
-        button_layout.addWidget(self.stop_button)
-
-        self.layout.addLayout(button_layout)
         self.setLayout(self.layout)
         self.update_styles()
         self.show()
 
-    def resizeEvent(self, event):
-        self.update_styles()
-        super().resizeEvent(event)
-
     def update_styles(self):
+        """
+        Update the styles of the widgets based on the window size.
+        """
         width = self.width()
-        height = self.height()
 
         # Update font sizes based on window size
         title_font_size = max(14, width // 20)
         description_font_size = max(12, width // 30)
-        button_font_size = max(12, width // 25)
-        camera_font_size = max(12, width // 30) 
 
         # Update styles
         self.title_label.setStyleSheet(f"font-size: {title_font_size}px; font-weight: bold; color: #2E86C1;")
         self.description_label.setStyleSheet(f"font-size: {description_font_size}px; color: #5D6D7E;")
-        self.start_button.setStyleSheet(f"""
-            QPushButton {{
-                background-color: #28B463; 
-                color: white; 
-                font-size: {button_font_size}px; 
-                border-radius: 10px;
-                padding: 10px;
-            }}
-            QPushButton:hover {{
-                background-color: #239B56;
-            }}
-        """)
-        self.stop_button.setStyleSheet(f"""
-            QPushButton {{
-                background-color: #CB4335; 
-                color: white; 
-                font-size: {button_font_size}px; 
-                border-radius: 10px;
-                padding: 10px;
-            }}
-            QPushButton:hover {{
-                background-color: #B03A2E;
-            }}
-        """)
-        for widget in self.findChildren(QtWidgets.QLabel):
-            if widget.text() == "Select Camera:":
-                widget.setStyleSheet(f"font-size: {camera_font_size}px; color: #2E86C1;")
-        
-        self.camera_combo.setStyleSheet(f"""
-            QComboBox {{
-                font-size: {camera_font_size}px;
-                padding: 5px;
-                border: 1px solid #BDC3C7;
-                border-radius: 5px;
-                min-width: {width // 3}px;
-            }}
-        """)
-
-    def keyPressEvent(self, event):
-        if event.key() in (QtCore.Qt.Key.Key_Return, QtCore.Qt.Key.Key_Enter, QtCore.Qt.Key.Key_Space):
-            event.ignore()  # Ignore the Enter and Space key presses
-        else:
-            super().keyPressEvent(event)
+        self.button_layout.update_styles(width)
+        self.camera_selection_widget.update_styles(width)   
+        self.blink_timer_widget.update_styles(width)
+        self.detection_sensitivity_widget.update_styles(width)
 
     def start_application(self):
+        """
+        Behavior when the start button is pressed.
+        """
         self.is_running = True # update application state
         reset_all_windows(self.blur_windows)  # Reset all windows before starting
         for window in self.blur_windows:
             window.showFullScreen()
             window.start_opacity()  # Start the blurring process
 
-        # Disable the start button and camera switching, change button appearance, and update its text
-        self.camera_combo.setEnabled(False)  
-        self.start_button.setEnabled(False)
-        self.start_button.setText("Detecting your Blinks...")
-        self.start_button.setStyleSheet("background-color: #A9A9A9; color: grey; font-size: 14px;")
+        # Disable Start button, camera switching, blink timer and detection sensitivity changes
+        self.camera_selection_widget.start()
+        self.blink_timer_widget.start()
+        self.detection_sensitivity_widget.start()
+        self.button_layout.start()
 
     def stop_application(self):
+        """
+        Behavior when the stop button is pressed.
+        """
         self.is_running = False # update application state
         for window in self.blur_windows:
             window.hide()
 
         # Re-enable the start button, restore its original appearance, and update its text
-        self.camera_combo.setEnabled(True)
-        self.start_button.setEnabled(True)
-        self.start_button.setText("Start")
-        self.start_button.setStyleSheet("""
-            QPushButton {
-                background-color: #28B463; 
-                color: white; 
-                font-size: 14px; 
-                border-radius: 10px;
-                padding: 10px;
-            }
-            QPushButton:hover {
-                background-color: #239B56;
-            }
-        """)
+        self.camera_selection_widget.stop()
+        self.blink_timer_widget.stop()
+        self.detection_sensitivity_widget.stop()
+        self.button_layout.stop()   
+
+    def keyPressEvent(self, event):
+        """
+        Ignore the Enter and Space key presses.
+        """
+        if event.key() in (QtCore.Qt.Key.Key_Return, QtCore.Qt.Key.Key_Enter, QtCore.Qt.Key.Key_Space):
+            event.ignore()  # Ignore the Enter and Space key presses
+        else:
+            super().keyPressEvent(event)
+
+    def resizeEvent(self, event):
+        """
+        Update the styles of the widgets when the window is resized.
+        """
+        self.update_styles()
+        super().resizeEvent(event)
 
     def closeEvent(self, event):
-        #Closing control window will stop the application
+        """
+        Behavior when the window is closed. 
+        Closing Control Window will stop the application.
+        """
         self.stop_application()  
         event.accept()  
     
-    def update_camera_feed(self, frame):
-        # Convert frame to QImage
-        height, width, channel = frame.shape
-        bytes_per_line = 3 * width
-        q_image = QtGui.QImage(frame.data, width, height, bytes_per_line, QtGui.QImage.Format.Format_RGB888)
-        # Convert to QPixmap and scale to fit the label
-        pixmap = QtGui.QPixmap.fromImage(q_image)
-        scaled_pixmap = pixmap.scaled(self.camera_label.size(), QtCore.Qt.AspectRatioMode.KeepAspectRatio)
-        self.camera_label.setPixmap(scaled_pixmap)
-    
+    def on_camera_selection_changed(self, index):
+        """Handle camera selection change."""
+        self.change_camera_func(index)
 
+    def update_camera_feed(self, frame):
+        """
+        Update the camera feed with the new frame.
+        """
+        self.camera_feed.update_camera_feed(frame)
+
+    def update_initial_delay(self, value):
+        """
+        Update the initial delay for the blurring process.
+        """
+        self.initial_delay_seconds = value
+        for window in self.blur_windows:
+            window.initial_delay_seconds = value 
+
+    def update_quantile(self, value):
+        """
+        Update the quantile for the blink detection process.
+        """
+        quantile_values = [0.99, 0.975, 0.96, 0.945, 0.93]
+        selected_quantile = quantile_values[value - 1]
+        self.blink_detector.module.calibrator.quantile = selected_quantile #affects detector as it is passed by reference
+
+    
 class BlurWindow(QtWidgets.QWidget):
+    """
+    Window that blurs the screen to create blinking awareness.
+    """
     def __init__(self, screen):
         super().__init__()
         self.setWindowFlags(QtCore.Qt.WindowType.FramelessWindowHint | QtCore.Qt.WindowType.WindowStaysOnTopHint | QtCore.Qt.WindowType.ToolTip)
@@ -274,62 +218,54 @@ class BlurWindow(QtWidgets.QWidget):
         self.initial_delay_timer.timeout.connect(self.start_opacity_increase)
         self.initial_delay_seconds = 5  # Delay in seconds before opacity starts increasing
 
-        # Start the initial delay timer
-        #self.initial_delay_timer.start(self.initial_delay_seconds * 1000)
-
     def start_opacity(self):
-        #Called by control window to start the application
+        """
+        Behavior when the application starts.
+        """
         self.reset_opacity()  # Ensure opacity is reset before starting
         self.initial_delay_timer.start(self.initial_delay_seconds * 1000)  # Start the initial delay timer
     
     def start_opacity_increase(self):
+        """
+        Start the opacity increase timer.
+        """
         self.initial_delay_timer.stop()
         self.timer.start(50)  # Start the opacity increase timer
 
     @QtCore.pyqtSlot()
     def reset_opacity(self):
+        """
+        Reset the opacity of the blur window.
+        """
         self.opacity_level = 0
         self.timer.stop()  # Stop the opacity increase timer
         self.initial_delay_timer.start(self.initial_delay_seconds * 1000)  # Restart the initial delay timer
         self.update()
 
     def paintEvent(self, event):
+        """
+        Paint the blur window.
+        """
         painter = QtGui.QPainter(self)
         painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
         painter.fillRect(self.rect(), QtGui.QColor(0, 0, 0, self.opacity_level))
         painter.end()
     
     def increase_opacity(self): 
+        """
+        Increase the opacity of the blur window.
+        """
         if self.opacity_level < self.max_opacity_level:
             self.opacity_level += self.opacity_step
             self.update()
         else:
             self.timer.stop()
 
+
 def reset_all_windows(blur_windows):  
+    """
+    Reset the opacity of all blur windows.
+    """
     for window in blur_windows:
         # Use invokeMethod to ensure the method is called in the correct thread
         QtCore.QMetaObject.invokeMethod(window, "reset_opacity", QtCore.Qt.ConnectionType.QueuedConnection)
-
-# def reset_all_windows(blur_windows, control_window=None):  
-#     if control_window.start_button.isEnabled():
-#         for window in blur_windows:
-#             # Use invokeMethod to ensure the method is called in the correct thread
-#             QtCore.QMetaObject.invokeMethod(window, "reset_opacity", QtCore.Qt.QueuedConnection)
-
-def main():
-    app = QtWidgets.QApplication([])
-    app.setWindowIcon(QtGui.QIcon("C:/Users/s_gue/Desktop/projects/neurablink/src/files/icon.png"))
-    blur_windows = []
-    for screen in app.screens():
-        blur_window = BlurWindow(screen)
-        blur_window.setGeometry(screen.geometry())  # Set the geometry to the screen's geometry
-        blur_window.showFullScreen()  # Show the window in full screen mode
-        blur_windows.append(blur_window)
-
-    control_window = ControlWindow(blur_windows)
-    #keyboard.add_hotkey('space', reset_all_windows, args=(blur_windows,))
-    app.exec()
-
-if __name__ == "__main__":
-    main() 

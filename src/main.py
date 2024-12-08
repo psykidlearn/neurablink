@@ -1,13 +1,13 @@
-import cv2
-import hydra
-from omegaconf import DictConfig
-from PyQt6 import QtWidgets, QtGui, QtCore
-import sys
 from utils.screen import *
 from utils.detector import *
 from utils.camera import *
 from utils.frame_processor import *
 from utils.distribution import bundled_path
+import cv2
+import hydra
+from omegaconf import DictConfig
+from PyQt6 import QtWidgets, QtGui, QtCore
+import sys
 
 
 @hydra.main(version_base=None, config_path=bundled_path("configs"), config_name="main")
@@ -51,7 +51,8 @@ def main(cfg: DictConfig):
     control_window = ControlWindow(
         blur_windows=blur_windows,
         icon_path=icon_path,
-        change_camera_func=camera_manager.change
+        change_camera_func=camera_manager.change,
+        blink_detector=blink_detector
         )
     control_window.closeEvent = lambda event: camera_manager.stop()
 
