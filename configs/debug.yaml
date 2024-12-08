@@ -1,0 +1,33 @@
+blink_detector: 
+  _target_: utils.detector.BufferedModule
+  module:
+    _target_: utils.detector.VerticalDistanceBlinkDetector
+    eye_detector: 
+      _target_: utils.detector.FaceMeshLandmarksDetector
+      mask_size: 16
+      default_landmarks_path: ./assets/default_landmarks.pkl
+    calibrator:
+      _target_: utils.detector.ContinuousCalibrator
+      buffer_size: 200
+      quantile: 0.97
+  buffer_size: 3
+
+camera_manager:
+  _target_: utils.camera.CameraManager
+
+frame_processor:
+  _target_: utils.frame_processor.FrameProcessor
+  highlight_intensity: 100
+
+verbose: false
+icon_path: ./assets/icon.png
+
+defaults:  
+  - _self_  
+  - override hydra/hydra_logging: disabled  
+  - override hydra/job_logging: disabled  
+  
+hydra:  
+  output_subdir: null  
+  run:  
+    dir: .
