@@ -45,19 +45,26 @@ class CameraSelectionWidget(QtWidgets.QWidget):
         """)
     
     def get_available_cameras(self):
-        """Get a list of available cameras"""
+        """
+        Get a list of available cameras
+        Note: First camera is initialized in main.py
+        """
         available_cameras = []
+
+        #Add default (first) camera
+        available_cameras.append("Camera 0")
+
         # We assume that users have not more than 5 cameras
-        for index in range(5):  
-            try:
-                cap = cv2.VideoCapture(index)  
-                if cap.isOpened():
-                    ret, _ = cap.read()
-                    if ret:
-                        available_cameras.append(f"Camera {index}")
-                    cap.release()
-            except:
-                continue
+        for index in range(1,5):  
+            #try:
+            cap = cv2.VideoCapture(index)  
+            if cap.isOpened():
+                ret, _ = cap.read()
+                if ret:
+                    available_cameras.append(f"Camera {index}")
+                cap.release()
+            # except:
+            #     continue
         
         # If no cameras found, raise an error and exit
         if not available_cameras:
