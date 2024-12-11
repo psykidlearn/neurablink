@@ -21,6 +21,14 @@ class FrameProcessor:
         self.control_window = control_window
         self.camera_manager = camera_manager
         self.highlight_intensity = highlight_intensity  # Adjust to reduce or increase highlight intensity
+        self.blink_persist_frames = int(self.camera_manager.fps * 0.2)  # Number of frames to persist the red highlight
+        self.blink_counter = 0  # Counter to track frames after a blink
+
+    def update_blink_persist_frames(self):
+        """
+        Update the number of frames to persist the red highlight based on the current FPS after camera change.
+        """
+        self.blink_persist_frames = int(self.camera_manager.fps * 0.2)  # Update based on current FPS
 
     def process_frames(self):
         """
@@ -38,9 +46,14 @@ class FrameProcessor:
 
             # Highlight eyes area
             if is_blink:
-                frame[eye_mask, 2] = np.clip(frame[eye_mask, 2] + self.highlight_intensity, 0, 255) # Increase red
-            else:
-                frame[eye_mask, 1] = np.clip(frame[eye_mask, 0] + self.highlight_intensity, 0, 255) # Increase green
+                self.blink_counter = self.blink_persist_frames  # Reset counter if blink detected
 
-            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # Convert BGR to RGB for Qt display
-            self.control_window.update_camera_feed(rgb_frame) # Update camera feed
+            # Highlight eyes area
+            if self.blink_counter > 0:
+                frame[eye_mask, 2] = np.clip(frame[eye_mask, 2] + self.highlight_intensity, 0, 255)  # Increase red
+                self.blink_counter -= 1  # Decrease counter
+            else:
+                frame[eye_mask, 1] = np.clip(frame[eye_mask, 0] + self.highlight_intensity, 0, 255)  # Increase green
+
+            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # Convert BGR to RGB for Qt display
+            self.control_window.update_camera_feed(rgb_frame)  # Update camera feed

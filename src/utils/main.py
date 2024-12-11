@@ -52,7 +52,8 @@ def main_func(cfg: DictConfig):
         blur_windows=blur_windows,
         icon_path=icon_path,
         change_camera_func=camera_manager.change,
-        blink_detector=blink_detector
+        blink_detector=blink_detector,
+        frame_processor=None #frame processor will be instantiated later
         )
     control_window.closeEvent = lambda event: camera_manager.stop()
 
@@ -65,6 +66,7 @@ def main_func(cfg: DictConfig):
         control_window=control_window,
         camera_manager=camera_manager
     )
+    control_window.frame_processor = frame_processor 
 
     # Timer to periodically process frames (non-blocking GUI)
     timer = QtCore.QTimer()

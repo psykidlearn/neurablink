@@ -10,6 +10,7 @@ class CameraManager:
     def __init__(self, cap: cv2.VideoCapture, app: QtWidgets.QApplication) -> None:
         self.cap = cap
         self.app = app
+        self.fps = self.cap.get(cv2.CAP_PROP_FPS)  # Used for frame processing
 
     def stop(self):
         if self.cap.isOpened():
@@ -22,6 +23,7 @@ class CameraManager:
         if self.cap.isOpened():
             self.cap.release()
         self.cap.open(camera_index)
+        self.fps = self.cap.get(cv2.CAP_PROP_FPS)  # Update FPS when camera changes
         if not self.cap.isOpened():
             print(f"Error: Could not access camera {camera_index}.")
             self.stop()

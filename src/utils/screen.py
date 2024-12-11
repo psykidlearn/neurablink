@@ -7,11 +7,12 @@ class ControlWindow(QtWidgets.QWidget):
     """
     Main window for controlling the application.
     """
-    def __init__(self, blur_windows, icon_path:str, change_camera_func, blink_detector):
+    def __init__(self, blur_windows, icon_path:str, change_camera_func, blink_detector, frame_processor):
         super().__init__()
         self.blur_windows = blur_windows
         self.change_camera_func = change_camera_func # Function to change the camera feed
         self.blink_detector = blink_detector
+        self.frame_processor = frame_processor
         self.initUI(icon_path)
         self.setStyle(QtWidgets.QStyleFactory.create('Fusion'))
         self.is_running = False  # track application state
@@ -167,6 +168,7 @@ class ControlWindow(QtWidgets.QWidget):
     def on_camera_selection_changed(self, index):
         """Handle camera selection change."""
         self.change_camera_func(index)
+        self.frame_processor.update_blink_persist_frames() #update blink persist frames based on new camera FPS
 
     def update_camera_feed(self, frame):
         """
