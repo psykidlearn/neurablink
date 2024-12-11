@@ -2,6 +2,8 @@
   <img src="./assets/icon.png" alt="Neurablink Icon" width="200"/>
 </p>
 
+![Static Badge](https://img.shields.io/badge/:badgeContent)
+
 # neurablink
 
 neurablink is a lightweight tool designed to remind you to blink while using your screens. By encouraging regular blinking, neurablink can help you counteract common discomforts associated with long periods of screen time, such as eye strain and dry eyes. 
@@ -27,8 +29,11 @@ neurablink helps address this by re-conditioning you to blink more often.
 ## Getting started
 
 Download the latest release for your platform:
-Windows: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14397050.svg)](https://doi.org/10.5281/zenodo.14397050)
-Linux: ...
+
+**[Download for Windows](https://zenodo.org/records/14398697/files/neurablink_windows.exe?download=1)**
+
+**[Download for Linux](https://zenodo.org/records/14398697/files/neurablink_linux?download=1)**
+
 
 ### For Builders / Contributors
 
