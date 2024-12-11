@@ -12,8 +12,28 @@ neurablink helps address this by gently reminding you to blink.
 
 ## How to Use
 
-### Build an Executable
-Run the following command to build an executable:
+Download the latest release for:
+Windows: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14397050.svg)](https://doi.org/10.5281/zenodo.14397050)
+Linux: ...
+
+### For Builders / Contributors
+
+#### Clone the Repository
+```bash
+git clone https://github.com/psykidlearn/neurablink.git
+```
+
+#### Create a Virtual Environment
+```bash
+conda create --name neurablink python=3.10
+```
+
+#### Install Dependencies
+```bash
+pip install -r requirements.txt
+```
+
+#### Adapt Code and Build an Executable
 ```bash
 python build_application.py
 ```
