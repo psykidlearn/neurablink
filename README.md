@@ -8,7 +8,7 @@
 
 neurablink is a lightweight tool designed to remind you to blink while using your screens. By encouraging regular blinking, neurablink can help you counteract common discomforts associated with long periods of screen time, such as eye strain and dry eyes. 
 
-The tool will dim your screen after you have not blinked for a while and clears after you blink again. This automatically conditions you to blink more often in a comfortable way. On the GUI, you can adjust the sensitivity of blink detection and the countdown until the tool dims your screen. The included real-time visual feedback helps you to find the settings that fit your eyes. 
+The tool will dim your screen(s) after you have not blinked for a while and clears after you blink again without interrupting your working tasks. This automatically conditions you to blink more often in a comfortable way. On the GUI, you can adjust the sensitivity of blink detection and the countdown until the tool dims your screen. The included real-time visual feedback helps you to find the settings that fit your eyes. 
 
 ## Why neurablink?
 From Cleveland Clinic's information on computer vision syndrome ([source](https://my.clevelandclinic.org/health/diseases/24802-computer-vision-syndrome)):
@@ -23,6 +23,7 @@ neurablink helps address this by re-conditioning you to blink more often.
 - Smooth blink reminder by dimming your screen without interrupting your workflow
 - Visual feedback to find the setting that suits you best
 - Customizable sensitivity and blink countdown
+- Works with multiple screens
 - Open source and free
 
 
@@ -33,6 +34,8 @@ Download the latest release for your platform:
 **[Download for Windows](https://zenodo.org/records/14398697/files/neurablink_windows.exe?download=1)**
 
 **[Download for Linux](https://zenodo.org/records/14398697/files/neurablink_linux?download=1)**
+
+Note for Linux users: Currently, the tool does not support the Wayland communication protocol (X11 works fine). 
 
 
 ### For Builders / Contributors
