@@ -24,6 +24,7 @@ neurablink helps address this by re-conditioning you to blink more often.
 - Visual feedback to find the setting that suits you best
 - Customizable sensitivity and blink countdown
 - Works with multiple screens
+- No GPU needed
 - Open source and free
 
 
