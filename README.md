@@ -1,14 +1,18 @@
+<p align="center">
+  <img src="./assets/icon.png" alt="Neurablink Icon" width="200"/>
+</p>
+
 # neurablink
 
-neurablink is a lightweight tool designed to remind you to blink while using your screens. By encouraging regular blinking, neurablink can help you counteract some common discomforts associated with long periods of screen time, such as eye strain and dry eyes. 
+neurablink is a lightweight tool designed to remind you to blink while using your screens. By encouraging regular blinking, neurablink can help you counteract common discomforts associated with long periods of screen time, such as eye strain and dry eyes. 
 
-The tool will dim your screen if you don't blink for some time. On the GUI, you can adjust the sensitivity of blink detection and the countdown until the tool dims your screen.
+The tool will dim your screen until you blink again, thereby conditioning you to blink more often. On the GUI, you can adjust the sensitivity of blink detection and the countdown until the tool dims your screen.
 
 ## Why neurablink?
 From Cleveland Clinic's information on computer vision syndrome ([source](https://my.clevelandclinic.org/health/diseases/24802-computer-vision-syndrome)):
 > "Normally, you naturally blink about 18 to 22 times per minute. You need to blink enough to keep your eyes lubricated. But when using a computer, most people only blink three to seven times per minute. Screen use may also cause incomplete blinking. This means you only partly close your eye when you blink. Not blinking fully or often enough can cause the surface of your eyes to dry out."
 
-neurablink helps address this by gently reminding you to blink.
+neurablink helps address this by re-conditioning you to blink more often.
 
 ## How to Use
 
@@ -38,7 +42,7 @@ pip install -r requirements.txt
 python build_application.py
 ```
 
-### Run for Debugging
+#### Run for Debugging
 To run the application for debugging purposes:
 ```bash
 python src/debug.py
