@@ -34,9 +34,8 @@ Download the latest release for your platform:
 
 **[Download for Windows](https://zenodo.org/records/14398697/files/neurablink_windows.exe?download=1)**
 
-**[Download for Linux](https://zenodo.org/records/14398697/files/neurablink_linux?download=1)**
+**[Download for Linux](https://zenodo.org/records/14398697/files/neurablink_linux?download=1)** (note: currently, Wayland is not supported - X11 works fine)
 
-Note for Linux users: Currently, the tool does not support the Wayland communication protocol (X11 works fine). 
 
 
 ### For Builders / Contributors
