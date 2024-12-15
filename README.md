@@ -38,6 +38,7 @@ Download the latest release for your platform:
 **[Download for Linux](https://zenodo.org/api/records/14497598/draft/files/neurablink/content)** (note: currently, Wayland is not supported - X11 works fine)
 
 
+Note: macOS is not supported yet.
 
 ### For Builders / Contributors
 
