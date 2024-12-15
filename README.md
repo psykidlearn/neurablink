@@ -19,7 +19,7 @@ neurablink helps address this by re-conditioning you to blink more often.
 ## Features
 
 - Real-time blink detection 
-![lightweight](https://github.com/user-attachments/assets/9d86e761-98d5-4943-9545-bc951760a1a1) Lightweight so you can work on your main tasks
+<img src="https://github.com/user-attachments/assets/9d86e761-98d5-4943-9545-bc951760a1a1" alt="lightweight" width="16" style="vertical-align: middle"> Lightweight so you can work on your main tasks
 - Smooth blink reminder by dimming your screen without interrupting your workflow
 - Visual feedback to find the setting that suits you best
 - Customizable sensitivity and blink countdown
