@@ -50,10 +50,10 @@ class FrameProcessor:
 
             # Highlight eyes area
             if self.blink_counter > 0:
-                frame[eye_mask, 2] = np.clip(frame[eye_mask, 2] + self.highlight_intensity, 0, 255)  # Increase red
+                frame[eye_mask, 2] = self.highlight_intensity  # Increase red
                 self.blink_counter -= 1  # Decrease counter
             else:
-                frame[eye_mask, 1] = np.clip(frame[eye_mask, 0] + self.highlight_intensity, 0, 255)  # Increase green
+                frame[eye_mask, 1] = self.highlight_intensity  # Increase green
 
             rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # Convert BGR to RGB for Qt display
             self.control_window.update_camera_feed(rgb_frame)  # Update camera feed
