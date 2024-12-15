@@ -4,7 +4,7 @@ import mediapipe as mp
 import pickle
 from PyQt6.QtCore import QObject, pyqtSignal
 from typing import Callable, Dict, List, Optional, Tuple
-
+import copy
 
 class BaseEyeLandmarksDetector:
 
@@ -176,7 +176,7 @@ class BufferedModule:
         self.buffer: List[np.ndarray] = []
 
     def __call__(self, x: np.ndarray) -> np.ndarray:
-        self.buffer.append(x)
+        self.buffer.append(copy.deepcopy(x))
         if self.buffer_size == len(self.buffer):
             out = self.module(self.buffer)
             self.buffer.pop(0)
