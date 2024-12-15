@@ -18,15 +18,21 @@ neurablink helps address this by re-conditioning you to blink more often.
 
 ## Features
 
-<img src="https://github.com/user-attachments/assets/5b0783cd-e901-4dd7-9595-3c43b48361f7" alt="slow-blinking" width="16" style="vertical-align: middle">Real-time blink detection 
+<img src="https://github.com/user-attachments/assets/5b0783cd-e901-4dd7-9595-3c43b48361f7" alt="slow-blinking" width="20" style="vertical-align: middle"> Real-time blink detection 
 
-<img src="https://github.com/user-attachments/assets/709c96bb-19d9-402f-a5c1-bf95c8ebee6e" alt="lightweight" width="16" style="vertical-align: middle"> Lightweight so you can work on your main tasks
-- Smooth blink reminder by dimming your screen without interrupting your workflow
-- Visual feedback to find the setting that suits you best
-- Customizable sensitivity and blink countdown
-- Works with multiple screens
-- No GPU needed
-- Open source and free
+<img src="https://github.com/user-attachments/assets/709c96bb-19d9-402f-a5c1-bf95c8ebee6e" alt="lightweight" width="20" style="vertical-align: middle"> Lightweight so you can work on your main tasks
+
+<img src="https://github.com/user-attachments/assets/2692c416-2942-4545-a302-d8008ec6b734" alt="day-and-night" width="20" style="vertical-align: middle"> Smooth blink reminder by dimming your screen without interrupting your workflow
+
+<img src="https://github.com/user-attachments/assets/1d854423-12c7-43e7-899a-e4a2feb4d10f" alt="online-learning" width="20" style="vertical-align: middle"> Visual feedback to find the setting that suits you best
+
+<img src="https://github.com/user-attachments/assets/d69e33da-060f-4581-8643-ba4a7d02ca04" alt="hand" width="20" style="vertical-align: middle"> Customizable sensitivity and blink countdown
+
+<img src="https://github.com/user-attachments/assets/6be05b7b-37ed-4943-bd49-45e2f6dc16ca" alt="multiscreen" width="20" style="vertical-align: middle"> Works with multiple screens
+
+<img src="https://github.com/user-attachments/assets/aad7032f-68e4-4152-b509-3b14befeeab7" alt="cpu" width="20" style="vertical-align: middle"> No GPU needed
+
+<img src="https://github.com/user-attachments/assets/8c59cb54-63ec-44a0-8158-a774aa99a3f2" alt="open-source" width="20" style="vertical-align: middle"> Open source and free
 
 
 ## Getting started
