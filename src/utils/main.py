@@ -6,7 +6,6 @@ import sys
 from .screen import ControlWindow, BlurWindow, reset_all_windows
 
 
-
 def main_func(cfg: DictConfig):
     # Instantiate the blink detector from configuration
     blink_detector = hydra.utils.instantiate(cfg.blink_detector)
@@ -18,17 +17,25 @@ def main_func(cfg: DictConfig):
         print("Error: Could not access the camera.")
         sys.exit(1)
 
-    # Initialize the Qt application and setup UI components
+    # Initialize the Qt application
+    app = QtWidgets.QApplication([])
+
+    # Setup splash screen
     try:
         icon_path = hydra.utils.instantiate(cfg.icon_path)
     except Exception as e:
         print(e)
         icon_path = cfg.icon_path
-    app = QtWidgets.QApplication([])
-    if not QtGui.QIcon(icon_path).isNull():
-        app.setWindowIcon(QtGui.QIcon(icon_path))
-    else:
-        print(f"Warning: Icon file not found at {icon_path}")
+
+    splash_pix = QtGui.QPixmap(icon_path if QtGui.QPixmap(icon_path).isNull() is False else ":/placeholder-icon.png")
+    splash = QtWidgets.QSplashScreen(splash_pix)
+    splash.show()
+    splash.showMessage(
+        "Initializing...",
+        QtCore.Qt.AlignmentFlag.AlignBottom | QtCore.Qt.AlignmentFlag.AlignHCenter,
+        QtCore.Qt.GlobalColor.white
+    )
+    app.processEvents()  # Ensure the splash screen updates while loading
 
     # Create blur windows for all screens
     blur_windows = [
@@ -53,8 +60,8 @@ def main_func(cfg: DictConfig):
         icon_path=icon_path,
         change_camera_func=camera_manager.change,
         blink_detector=blink_detector,
-        frame_processor=None #frame processor will be instantiated later
-        )
+        frame_processor=None  # Frame processor will be instantiated later
+    )
     control_window.closeEvent = lambda event: camera_manager.stop()
 
     # Instantiate the frame processor
@@ -66,15 +73,18 @@ def main_func(cfg: DictConfig):
         control_window=control_window,
         camera_manager=camera_manager
     )
-    control_window.frame_processor = frame_processor 
+    control_window.frame_processor = frame_processor
 
     # Timer to periodically process frames (non-blocking GUI)
     timer = QtCore.QTimer()
     timer.timeout.connect(frame_processor.process_frames)
     timer.start(16)  # Approximately 60 FPS
 
-    # Run application
+    # Hide splash and show main window
+    splash.finish(control_window)
     control_window.show()
+
+    # Run application
     app.exec()
 
     # Release camera on exit
