@@ -6,17 +6,45 @@ import sys
 from .screen import ControlWindow, BlurWindow, reset_all_windows
 
 
+class CameraLoader(QtCore.QThread):
+    camera_loaded = QtCore.pyqtSignal(cv2.VideoCapture)
+
+    def run(self):
+        cap = cv2.VideoCapture(0)
+        if cap.isOpened():
+            self.camera_loaded.emit(cap)
+        else:
+            print("Error: Could not access the camera.")
+            sys.exit(1)
+
+
+def on_camera_loaded(cap, cfg, app, control_window):
+    # Create the camera manager
+    camera_manager = hydra.utils.instantiate(cfg.camera_manager, cap=cap, app=app)
+    control_window.change_camera_func = camera_manager.change
+    control_window.closeEvent = lambda event: camera_manager.stop()
+
+    # Instantiate the frame processor
+    frame_processor = hydra.utils.instantiate(
+        cfg.frame_processor,
+        blink_detector=control_window.blink_detector,
+        cap=cap,
+        app=app,
+        control_window=control_window,
+        camera_manager=camera_manager
+    )
+    control_window.frame_processor = frame_processor 
+
+    # Timer to periodically process frames (non-blocking GUI)
+    timer = QtCore.QTimer(control_window)
+    timer.timeout.connect(frame_processor.process_frames)
+    timer.start(16)  # Approximately 60 FPS
+    control_window.button_layout.stop() # Enable Start/Stop buttons once camera is live
+
 
 def main_func(cfg: DictConfig):
     # Instantiate the blink detector from configuration
     blink_detector = hydra.utils.instantiate(cfg.blink_detector)
-
-    # Initialize OpenCV VideoCapture
-    print("Getting your camera stream. This may take a second...")
-    cap = cv2.VideoCapture(0)
-    if not cap.isOpened():
-        print("Error: Could not access the camera.")
-        sys.exit(1)
 
     # Initialize the Qt application and setup UI components
     try:
@@ -44,42 +72,30 @@ def main_func(cfg: DictConfig):
     except AttributeError as e:
         print(f"Blink detector signal connection failed: {e}")
 
-    # Create the camera manager
-    camera_manager = hydra.utils.instantiate(cfg.camera_manager, cap=cap, app=app)
-
     # Create the control window
     control_window = ControlWindow(
         blur_windows=blur_windows,
         icon_path=icon_path,
-        change_camera_func=camera_manager.change,
+        change_camera_func=None,
         blink_detector=blink_detector,
         frame_processor=None #frame processor will be instantiated later
         )
-    control_window.closeEvent = lambda event: camera_manager.stop()
+    control_window.show()
+    app.processEvents()  # Force the GUI to update
 
-    # Instantiate the frame processor
-    frame_processor = hydra.utils.instantiate(
-        cfg.frame_processor,
-        blink_detector=blink_detector,
-        cap=cap,
-        app=app,
-        control_window=control_window,
-        camera_manager=camera_manager
-    )
-    control_window.frame_processor = frame_processor 
-
-    # Timer to periodically process frames (non-blocking GUI)
-    timer = QtCore.QTimer()
-    timer.timeout.connect(frame_processor.process_frames)
-    timer.start(16)  # Approximately 60 FPS
+    # Initialize OpenCV VideoCapture
+    print("Getting your camera stream. This may take a second...")
+    camera_loader = CameraLoader()
+    camera_loader.camera_loaded.connect(lambda cap: on_camera_loaded(cap, cfg, app, control_window))
+    camera_loader.start()
 
     # Run application
     control_window.show()
     app.exec()
 
     # Release camera on exit
-    if cap.isOpened():
-        cap.release()
+    # if cap.isOpened():
+    #     cap.release()
 
 
 if __name__ == "__main__":

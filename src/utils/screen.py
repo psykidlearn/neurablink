@@ -87,6 +87,7 @@ class ControlWindow(QtWidgets.QWidget):
             stop_callback=self.stop_application
             )
         self.layout.addLayout(self.button_layout)
+        self.button_layout.upon_start() #Initially disable buttons until camera is live
 
         self.setLayout(self.layout)
         self.update_styles()
