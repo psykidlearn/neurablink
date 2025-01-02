@@ -275,6 +275,11 @@ class ButtonLayout(QtWidgets.QHBoxLayout):
         self.stop_button.clicked.connect(stop_callback)
         self.addWidget(self.stop_button)
 
+    def upon_start(self):
+        """Set the buttons to a disabled state with a grey appearance (until camera is loaded)."""
+        self.start_button.setEnabled(False)
+        self.stop_button.setEnabled(False)
+    
     def start(self):
         self.start_button.setEnabled(False)
         self.start_button.setText("Detecting your Blinks...")
@@ -282,6 +287,7 @@ class ButtonLayout(QtWidgets.QHBoxLayout):
 
     def stop(self):
         self.start_button.setEnabled(True)
+        self.stop_button.setEnabled(True)
         self.start_button.setText("Start")
         self.start_button.setStyleSheet("""
             QPushButton {

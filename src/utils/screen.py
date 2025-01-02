@@ -49,6 +49,7 @@ class ControlWindow(QtWidgets.QWidget):
             )
         self.layout.addWidget(self.camera_selection_widget)
         self.camera_selection_widget.camera_combo.currentIndexChanged.connect(self.on_camera_selection_changed) # Connect camera selection change signal
+        self.camera_selection_widget.start()  # Initially disable camera selection
 
         # Blink Timer setting layout
         self.blink_timer_widget = BlinkTimerWidget(
@@ -87,6 +88,7 @@ class ControlWindow(QtWidgets.QWidget):
             stop_callback=self.stop_application
             )
         self.layout.addLayout(self.button_layout)
+        self.button_layout.upon_start() #Initially disable buttons until camera is live
 
         self.setLayout(self.layout)
         self.update_styles()
@@ -192,6 +194,7 @@ class ControlWindow(QtWidgets.QWidget):
         selected_quantile = quantile_values[value - 1]
         self.blink_detector.module.calibrator.quantile = selected_quantile #affects detector as it is passed by reference
 
+    
     
 class BlurWindow(QtWidgets.QWidget):
     """
