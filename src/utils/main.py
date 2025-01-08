@@ -21,7 +21,9 @@ class CameraLoader(QtCore.QThread):
 def on_camera_loaded(cap, cfg, app, control_window):
     # Create the camera manager
     camera_manager = hydra.utils.instantiate(cfg.camera_manager, cap=cap, app=app)
+    camera_manager.control_window = control_window  # Pass control window reference
     control_window.change_camera_func = camera_manager.change
+    camera_manager.camera_changed.connect(camera_manager.on_camera_changed)
     control_window.closeEvent = lambda event: camera_manager.stop()
 
     # Instantiate the frame processor
@@ -35,11 +37,11 @@ def on_camera_loaded(cap, cfg, app, control_window):
     )
     control_window.frame_processor = frame_processor 
 
-    # Timer to periodically process frames (non-blocking GUI)
-    timer = QtCore.QTimer(control_window)
-    timer.timeout.connect(frame_processor.process_frames)
-    timer.start(16)  # Approximately 60 FPS
-    control_window.button_layout.stop() # Enable Start/Stop buttons once camera is live
+    # Initialize and start the timer for frame processing
+    control_window.frame_timer = QtCore.QTimer(control_window)
+    control_window.frame_timer.timeout.connect(control_window.frame_processor.process_frames)
+    control_window.frame_timer.start(16)  # Approximately 60 FPS
+    control_window.enable_ui_components() # Enable Start/Stop buttons + cam selector once camera is live
 
 
 def main_func(cfg: DictConfig):

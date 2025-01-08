@@ -16,6 +16,7 @@ class ControlWindow(QtWidgets.QWidget):
         self.initUI(icon_path)
         self.setStyle(QtWidgets.QStyleFactory.create('Fusion'))
         self.is_running = False  # track application state
+        self.frame_timer = None
 
     def initUI(self, icon_path:str):
         """
@@ -194,6 +195,19 @@ class ControlWindow(QtWidgets.QWidget):
         selected_quantile = quantile_values[value - 1]
         self.blink_detector.module.calibrator.quantile = selected_quantile #affects detector as it is passed by reference
 
+    def disable_ui_components(self):
+        """Disable UI components during camera change."""
+        self.camera_selection_widget.start()  # Disable camera selection
+        self.button_layout.upon_start()  # Disable Start/Stop buttons
+        if self.frame_timer:
+            self.frame_timer.stop()
+
+    def enable_ui_components(self):
+        """Enable UI components after camera change."""
+        self.camera_selection_widget.stop()
+        self.button_layout.stop()
+        if self.frame_timer:
+            self.frame_timer.start(16)  # Restart frame processing
     
     
 class BlurWindow(QtWidgets.QWidget):
