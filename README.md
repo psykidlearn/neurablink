@@ -39,10 +39,10 @@ neurablink helps address this by re-conditioning you to blink more often.
 
 Download the latest release for your platform:
 
-**[Download for Windows](https://zenodo.org/api/records/14497598/draft/files/neurablink_windows_1_2.exe/content)** 
+**[Download for Windows](https://zenodo.org/records/14497598/files/neurablink_windows_1_2.exe?download=1)** 
 
 
-**[Download for Linux](https://zenodo.org/api/records/14497598/draft/files/neurablink_ubuntu_1_2/content)** (note: currently, Wayland is not supported - X11 works fine)
+**[Download for Linux](https://zenodo.org/records/14497598/files/neurablink_ubuntu_1_2?download=1)** (note: currently, Wayland is not supported - X11 works fine)
 
 
 Note: macOS is not supported yet. Linux version tested on Ubuntu 22.04 and Debian 12.
