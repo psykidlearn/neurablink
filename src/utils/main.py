@@ -7,6 +7,9 @@ from .screen import ControlWindow, BlurWindow, reset_all_windows
 
 
 class CameraLoader(QtCore.QThread):
+    """
+    Thread to load camera and emit signal when camera is loaded.
+    """
     camera_loaded = QtCore.pyqtSignal(cv2.VideoCapture)
 
     def run(self):

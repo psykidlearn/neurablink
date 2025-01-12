@@ -6,6 +6,9 @@ from utils.detector import BufferedModule
 from utils.camera import CameraManager
 
 class FrameProcessor:
+    """
+    Class to process frames from the camera and update the camera feed in the control window.
+    """
     def __init__(
             self, 
             blink_detector: 'BufferedModule', 

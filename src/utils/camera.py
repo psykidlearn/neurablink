@@ -4,6 +4,9 @@ import sys
 
 
 class CameraManager(QtCore.QThread):
+    """
+    Thread to manage camera access and change.
+    """
     camera_changed = QtCore.pyqtSignal(bool)
 
     def __init__(self, cap: cv2.VideoCapture, app: QtWidgets.QApplication) -> None:
