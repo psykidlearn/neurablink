@@ -2,7 +2,7 @@
   <img src="./assets/icon.png" alt="Neurablink Icon" width="200"/>
 </p>
 
-![Version](https://img.shields.io/badge/Version-1.0-blue)
+![Version](https://img.shields.io/badge/Version-1.2-blue)
 
 # neurablink
 
